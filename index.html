@@ -199,6 +199,7 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-
       <div class="wide" style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="primary" id="btnZip">全ページをZIPで書き出し</button>
         <button id="btnEach">全ページを1枚ずつ保存</button>
+        <button class="primary" id="btnPdf" title="クリスタEXの「ストーリー → ページの取り込み」で全ページを一括でページ化できます">全ページを1つのPDFで書き出し（クリスタEX一括取り込み用）</button>
       </div>
     </div>
 
@@ -237,7 +238,14 @@ dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-
       <li>プレビューのコマをクリックして選択し、<kbd>1</kbd>〜<kbd>5</kbd> キー、または上部／コマ右下のボタンでサイズを5段階で変更します（3が標準）。</li>
       <li>サイズに合わせてページ全体が自動で綺麗に割り直されます。ページ上部の「◀ ▶」で別の割り方の候補に切り替えられます。</li>
     </ul>
-    <h3>4. PNG で書き出して CLIP STUDIO PAINT へ</h3>
+    <h3>4-A. PDF でクリスタEXに一括取り込み（ページ自動振り分け）</h3>
+    <ol>
+      <li>「用紙・レイアウト設定」を、クリスタの作品と同じ仕上がりサイズ・裁ち落とし幅・解像度に合わせます。</li>
+      <li>「PNG書き出し」→「全ページを1つのPDFで書き出し」。PDFの1ページ＝コマ割りの1ページです（用紙サイズは仕上がり＋裁ち落とし）。</li>
+      <li>クリスタ EX で複数ページの作品を開き（または新規作成し）、メニュー「ストーリー → ページの取り込み」でこの PDF を選びます。変換設定のダイアログが出るので、作品と同じ解像度などを指定すると、PDFの各ページがそれぞれ1ページとして追加されます。</li>
+      <li>複数ページ作品・「ストーリー」メニューは CLIP STUDIO PAINT EX の機能です（PRO/DEBUT では使えません）。PDF の取り込みは比較的新しいバージョンで追加された機能のため、メニューに無い場合はクリスタを更新するか、下の 4-B の方法を使ってください。</li>
+    </ol>
+    <h3>4-B. PNG で書き出して CLIP STUDIO PAINT へ</h3>
     <ol>
       <li>「用紙・レイアウト設定」を、クリスタで使う作品と同じ仕上がりサイズ・基本枠・裁ち落とし幅・解像度に合わせます。出力画像のサイズは「仕上がり＋裁ち落とし」です（書き出しパネルにピクセル数を表示）。</li>
       <li>「PNG書き出し」→「全ページをZIPで書き出し」。展開すると <code>page_001.png</code>, <code>page_002.png</code>… の連番で並びます。</li>
@@ -917,15 +925,15 @@ function wrapLine(ctx, text, maxW){
   lines.push(line);
   return lines;
 }
-// 1ページ分を描画して PNG Blob を返す。layer: 'all' | 'frames' | 'text'
-async function renderPageBlob(pg, layer){
+// 1ページ分をキャンバスに描画する。layer: 'all' | 'frames' | 'text'
+function drawPageCanvas(pg, layer, forceWhite){
   const S = state.settings, E = state.exp;
   const {w, h, ppm} = canvasPx();
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
   const ctx = cv.getContext('2d');
   const m = v => v * ppm;
   const {ox, oy} = frameOrigin();
-  if(E.whiteBg && layer !== 'text'){ ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
+  if(forceWhite || (E.whiteBg && layer !== 'text')){ ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
   // 枠線
   if(layer !== 'text'){
     ctx.strokeStyle = '#000'; ctx.lineWidth = m(S.line); ctx.lineJoin = 'miter';
@@ -960,9 +968,108 @@ async function renderPageBlob(pg, layer){
     }
     ctx.restore();
   });
+  return cv;
+}
+// 1ページ分を PNG Blob にする
+async function renderPageBlob(pg, layer){
+  const cv = drawPageCanvas(pg, layer, false);
   const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
   cv.width = cv.height = 0; // メモリ解放
-  return setPngDpi(blob, S.dpi);
+  return setPngDpi(blob, state.settings.dpi);
+}
+
+// ===== PDF 書き出し（クリスタEXの「ページの取り込み」で一括ページ化する用） =====
+// キャンバスを帯状に読み出し、グレー(またはRGB)の画素を Flate 圧縮する
+async function canvasToFlate(cv, gray){
+  const ctx = cv.getContext('2d'), w = cv.width, h = cv.height, ch = gray ? 1 : 3;
+  const cs = new CompressionStream('deflate');
+  const outP = new Response(cs.readable).arrayBuffer();
+  const writer = cs.writable.getWriter();
+  const STRIP = 256;
+  for(let y = 0; y < h; y += STRIP){
+    const sh = Math.min(STRIP, h - y);
+    const src = ctx.getImageData(0, y, w, sh).data;
+    const dst = new Uint8Array(w * sh * ch);
+    for(let i = 0, j = 0; i < src.length; i += 4){
+      if(gray){ dst[j++] = (src[i] * 77 + src[i + 1] * 150 + src[i + 2] * 29) >> 8; }
+      else{ dst[j++] = src[i]; dst[j++] = src[i + 1]; dst[j++] = src[i + 2]; }
+    }
+    await writer.write(dst);
+  }
+  await writer.close();
+  return new Uint8Array(await outP);
+}
+// 全ページを1つのPDFにまとめる（1ページ＝1画像、用紙サイズは仕上がり＋裁ち落とし）
+async function buildPdf(pages, onProgress){
+  const S = state.settings, mode = state.exp.mode;
+  const layer = mode === 'frames' ? 'frames' : 'all'; // 「別ファイル」設定でもPDFは枠線＋メモの1枚
+  const gray = !state.exp.num; // コマ番号(青)が無ければグレースケールで軽量化
+  const pt = mm => +(mm / 25.4 * 72).toFixed(3);
+  const Wpt = pt(S.trimW + 2 * S.bleed), Hpt = pt(S.trimH + 2 * S.bleed);
+  const enc = new TextEncoder(), parts = [], offsets = [];
+  let off = 0;
+  const add = x => { const u = typeof x === 'string' ? enc.encode(x) : x; parts.push(u); off += u.length; };
+  const obj = (id, body) => { offsets[id] = off; add(`${id} 0 obj
+${body}
+endobj
+`); };
+  const N = pages.length;
+  add('%PDF-1.4\n%âãÏÓ\n');
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, `<< /Type /Pages /Kids [${pages.map((_, i) => `${3 + i * 3} 0 R`).join(' ')}] /Count ${N} >>`);
+  for(let i = 0; i < N; i++){
+    onProgress && onProgress(i, N);
+    await new Promise(r => setTimeout(r, 30));
+    const pid = 3 + i * 3, cid = pid + 1, iid = pid + 2;
+    const cv = drawPageCanvas(pages[i], layer, true);
+    const data = await canvasToFlate(cv, gray);
+    const w = cv.width, h = cv.height;
+    cv.width = cv.height = 0;
+    obj(pid, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${Wpt} ${Hpt}] /Resources << /XObject << /Im0 ${iid} 0 R >> >> /Contents ${cid} 0 R >>`);
+    const content = `q ${Wpt} 0 0 ${Hpt} 0 0 cm /Im0 Do Q`;
+    obj(cid, `<< /Length ${content.length} >>
+stream
+${content}
+endstream`);
+    offsets[iid] = off;
+    add(`${iid} 0 obj
+<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /${gray ? 'DeviceGray' : 'DeviceRGB'} /BitsPerComponent 8 /Filter /FlateDecode /Length ${data.length} >>
+stream
+`);
+    add(data);
+    add('\nendstream\nendobj\n');
+  }
+  const size = 3 + N * 3, xref = off;
+  let x = `xref
+0 ${size}
+0000000000 65535 f 
+`;
+  for(let id = 1; id < size; id++) x += String(offsets[id]).padStart(10, '0') + ' 00000 n \n';
+  add(x + `trailer
+<< /Size ${size} /Root 1 0 R >>
+startxref
+${xref}
+%%EOF
+`);
+  return new Blob(parts, {type:'application/pdf'});
+}
+function dateStamp(){
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+}
+async function exportPdf(){
+  if(typeof CompressionStream === 'undefined'){ alert('このブラウザはPDF書き出しに対応していません。最新の Chrome / Edge / Safari をお使いください。'); return; }
+  renderPreview();
+  const dlg = $('#progress'), txt = $('#progText');
+  dlg.showModal();
+  try{
+    const blob = await buildPdf(lastPages, (i, n) => { txt.textContent = `PDF作成中… ${i + 1} / ${n}`; });
+    download(blob, `komawari_${dateStamp()}.pdf`);
+  }catch(err){
+    alert('PDFの作成に失敗しました：' + err.message);
+  }finally{
+    dlg.close();
+  }
 }
 // 出力するファイル一覧（名前と描画レイヤー）
 function fileJobs(pages){
@@ -998,8 +1105,7 @@ async function exportPages(pages, asZip){
     }
     if(zip){
       txt.textContent = 'ZIPにまとめています…';
-      const d = new Date(), stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-      download(await zip.generateAsync({type:'blob'}), `komawari_${stamp}.zip`);
+      download(await zip.generateAsync({type:'blob'}), `komawari_${dateStamp()}.zip`);
     }
   }catch(err){
     alert('書き出しに失敗しました：' + err.message);
@@ -1009,6 +1115,7 @@ async function exportPages(pages, asZip){
 }
 $('#btnZip').addEventListener('click', () => exportPages(lastPages, true));
 $('#btnEach').addEventListener('click', () => exportPages(lastPages, false));
+$('#btnPdf').addEventListener('click', exportPdf);
 
 // ===== ヘッダーの操作 =====
 $('#btnBulk').addEventListener('click', () => { $('#bulkText').value = serialize(state.rows); $('#dlgBulk').showModal(); });
