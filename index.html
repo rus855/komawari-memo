@@ -8,263 +8,414 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
-  --bg:#f3f3ef; --surface:#ffffff; --surface2:#f8f8f5; --text:#1d1d1f; --muted:#6c6c70;
-  --line:#dcdcd6; --accent:#2f6fdf; --accent-weak:#e4edfc; --danger:#c8402f;
-  --seg-a:#f6f8fc; --seg-b:#fcf8f1; --desk:#e4e4de; --sel:#fff3c4;
+  --bg:#f2f1ec; --surface:#ffffff; --surface2:#f7f6f2; --text:#1f1f22; --muted:#6d6d73;
+  --line:#dddcd5; --accent:#2f6fdf; --accent-weak:#e6eefc; --accent-text:#1f56b8;
+  --page:#c8402f; --page-weak:#fbe9e6; --ok:#2e8b57; --warn:#f0a020;
+  --card-sel:#fff6d8; --desk:#e2e1da; --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 14px rgba(0,0,0,.05);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#1b1b1d; --surface:#252528; --surface2:#2c2c30; --text:#ececee; --muted:#a0a0a6;
-    --line:#3c3c42; --accent:#6f9ef5; --accent-weak:#25344f; --danger:#f07563;
-    --seg-a:#262a31; --seg-b:#2e2a24; --desk:#141416; --sel:#4a4220;
+    --bg:#19191b; --surface:#242427; --surface2:#2b2b2f; --text:#ececee; --muted:#a3a3a9;
+    --line:#3b3b41; --accent:#6f9ef5; --accent-weak:#24324d; --accent-text:#9dbdf8;
+    --page:#f07563; --page-weak:#3d2622; --ok:#5fc08a; --warn:#f0b040;
+    --card-sel:#3b3520; --desk:#121214; --shadow:0 1px 3px rgba(0,0,0,.4);
   }
 }
 :root[data-theme="dark"]{
-  --bg:#1b1b1d; --surface:#252528; --surface2:#2c2c30; --text:#ececee; --muted:#a0a0a6;
-  --line:#3c3c42; --accent:#6f9ef5; --accent-weak:#25344f; --danger:#f07563;
-  --seg-a:#262a31; --seg-b:#2e2a24; --desk:#141416; --sel:#4a4220;
+  --bg:#19191b; --surface:#242427; --surface2:#2b2b2f; --text:#ececee; --muted:#a3a3a9;
+  --line:#3b3b41; --accent:#6f9ef5; --accent-weak:#24324d; --accent-text:#9dbdf8;
+  --page:#f07563; --page-weak:#3d2622; --ok:#5fc08a; --warn:#f0b040;
+  --card-sel:#3b3520; --desk:#121214; --shadow:0 1px 3px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
-body{background:var(--bg);color:var(--text);font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;font-size:14px;display:flex;flex-direction:column}
 button,select,input,textarea{font:inherit;color:inherit}
-button{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
-button:hover{border-color:var(--accent)}
-button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-kbd{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 3px;margin-left:4px}
-header{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:wrap}
-header h1{font-size:17px;margin:0 8px 0 0}
-.hbtns{display:flex;gap:6px;flex-wrap:wrap}
-main{display:grid;grid-template-columns:minmax(320px,440px) 1fr;height:calc(100vh - 50px)}
-#left{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--surface)}
+button{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+button:hover:not(:disabled){border-color:var(--accent);color:var(--accent-text)}
+button:disabled{opacity:.4;cursor:default}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.primary:hover{filter:brightness(1.08);color:#fff}
+button.ghost{border-color:transparent;background:transparent}
+button.ghost:hover{background:var(--surface2)}
+kbd{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 4px}
+
+/* ===== ヘッダー ===== */
+header{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:wrap;flex:none}
+.logo{font-size:17px;font-weight:700;margin-right:8px;display:flex;align-items:center;gap:8px}
+.logo svg{flex:none}
+.hspace{flex:1}
+.menu{position:relative}
+.menu > summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:6px 12px;background:var(--surface)}
+.menu > summary::-webkit-details-marker{display:none}
+.menu[open] > summary{border-color:var(--accent)}
+.menu .items{position:absolute;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:6px;z-index:30;min-width:240px;display:flex;flex-direction:column}
+.menu .items button{border:none;text-align:left;padding:8px 10px;display:flex;flex-direction:column;gap:1px}
+.menu .items button small{color:var(--muted);font-size:11px;white-space:normal}
+
+/* ===== ガイド（4ステップ） ===== */
+#guide{display:flex;gap:6px;padding:8px 16px;background:var(--surface2);border-bottom:1px solid var(--line);align-items:stretch;flex:none;overflow-x:auto}
+#guide.hidden{display:none}
+.step{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:10px;background:var(--surface);border:1px solid var(--line);min-width:0;flex:1;text-align:left;white-space:normal}
+.step .no{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent-weak);color:var(--accent-text);display:grid;place-items:center;font-weight:700;font-size:13px}
+.step.done .no{background:var(--ok);color:#fff}
+.step b{display:block;font-size:13px}
+.step small{display:block;color:var(--muted);font-size:11px;line-height:1.35}
+.step .arrow{color:var(--muted)}
+#guideClose{flex:none;align-self:center}
+
+/* ===== メイン ===== */
+main{flex:1;display:grid;grid-template-columns:minmax(330px,460px) 1fr;min-height:0}
+#left{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--bg)}
 #right{display:flex;flex-direction:column;min-height:0;min-width:0}
-.ltool,.rtool{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.ttl{font-weight:600;margin-right:auto}
-#editor{flex:1;overflow:auto;padding:8px 6px 40px}
-.hint{font-size:12px;color:var(--muted);padding:6px 12px;border-top:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--surface);flex:none}
+.bar h2{font-size:14px;margin:0;display:flex;align-items:center;gap:6px}
+.bar .sub{font-size:12px;color:var(--muted)}
+#editor{flex:1;overflow:auto;padding:10px 12px 60px}
 
-/* エディタ行 */
-.row{position:relative;display:flex;align-items:flex-start;gap:2px;padding:1px 4px 1px 0;border-left:4px solid transparent}
-.row.item{padding-left:calc(var(--ind,0) * 22px)}
-.row.seg-a{background:var(--seg-a);border-left-color:#9db7e6}
-.row.seg-b{background:var(--seg-b);border-left-color:#e2bf86}
-.row.sel{background:var(--sel)}
-.row .cut{opacity:0;border:none;background:none;padding:3px 4px;font-size:13px;color:var(--muted);flex:none}
-.row:hover .cut,.row:focus-within .cut{opacity:.8}
-.row .cut:hover{color:var(--accent);opacity:1}
-.row .bullet{flex:none;width:16px;padding-top:4px;text-align:center;color:var(--muted)}
-.row textarea{flex:1;border:none;background:transparent;resize:none;padding:4px 2px;line-height:1.5;outline:none;overflow:hidden;min-width:0}
-.row .tag{flex:none;font-size:11px;color:var(--muted);padding:5px 4px 0;cursor:pointer;white-space:nowrap}
-.row .tag:hover{color:var(--accent)}
-.row.brk{align-items:center;padding:4px 4px;gap:6px}
-.row.brk .ln{flex:1;border-top:2px dashed #8ea9dc;height:0}
-.row.brk.page .ln{border-top:3px double var(--danger)}
-.row.brk .lbl{font-size:12px;padding:1px 8px;border-radius:10px;color:var(--accent);border-color:#8ea9dc}
-.row.brk.page .lbl{color:var(--danger);border-color:var(--danger)}
-.row.brk .del{border:none;background:none;color:var(--muted);padding:0 4px}
+/* ページ見出し */
+.pagebar{display:flex;align-items:center;gap:8px;margin:14px 2px 6px;color:var(--page);font-weight:700;font-size:13px}
+.pagebar:first-child{margin-top:2px}
+.pagebar::after{content:"";flex:1;border-top:2px solid var(--page);opacity:.35}
+.pagebar small{font-weight:400;color:var(--muted)}
 
-/* プレビュー */
-.panel{background:var(--surface);border-bottom:1px solid var(--line);padding:10px 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px 14px}
-.panel.hidden{display:none}
-.panel label{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}
-.panel label.ck{flex-direction:row;align-items:center;gap:6px;color:var(--text);font-size:13px}
-.panel input[type=number],.panel select{padding:4px 6px;border:1px solid var(--line);border-radius:5px;background:var(--surface2);color:var(--text)}
-.panel .wide{grid-column:1/-1}
-.info{font-size:12px;color:var(--muted)}
-#selbar{display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--surface2);border-bottom:1px solid var(--line);font-size:13px;flex-wrap:wrap;min-height:38px}
-#selbar .sz{min-width:30px;padding:3px 0}
-#selbar .sz.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-#pages{flex:1;overflow:auto;background:var(--desk);padding:16px;display:flex;flex-wrap:wrap;gap:20px;align-content:flex-start}
+/* コマカード */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;box-shadow:var(--shadow);transition:background .2s,border-color .2s}
+.card.sel{border-color:var(--warn);background:var(--card-sel)}
+.card.flash{animation:flash 1s}
+@keyframes flash{0%{box-shadow:0 0 0 4px var(--warn)}100%{box-shadow:var(--shadow)}}
+.chead{display:flex;align-items:center;gap:6px;padding:6px 8px 6px 12px;border-bottom:1px dashed var(--line);flex-wrap:wrap;cursor:pointer}
+.cno{font-weight:700;font-size:13px;color:var(--accent-text);margin-right:2px}
+.dots{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--muted)}
+.dots button{width:18px;height:18px;padding:0;border-radius:50%;border:2px solid var(--accent);background:transparent}
+.dots button.on{background:var(--accent)}
+.dots button:hover{transform:scale(1.15)}
+.chips{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
+.chip{font-size:12px;padding:3px 9px;border-radius:999px}
+.chip.on{background:var(--page-weak);border-color:var(--page);color:var(--page)}
+.rows{padding:4px 6px 2px}
+.row{display:flex;align-items:flex-start;gap:2px;padding-left:calc(var(--ind,0) * 20px);border-radius:6px}
+.row:hover{background:var(--surface2)}
+.row .bullet{flex:none;width:18px;padding-top:5px;text-align:center;color:var(--muted)}
+.row textarea{flex:1;border:none;background:transparent;resize:none;padding:5px 2px;line-height:1.5;outline:none;overflow:hidden;min-width:0}
+.row textarea::placeholder{color:var(--muted);opacity:.7}
+.row .cut{flex:none;font-size:12px;padding:2px 8px;margin-top:3px;border-radius:999px;opacity:0;color:var(--accent-text);border-color:var(--accent-weak);background:var(--accent-weak)}
+.row:hover .cut,.row:focus-within .cut{opacity:1}
+.rows .row:first-child .cut{display:none}
+.empty{color:var(--muted);font-size:12px;padding:6px 8px}
+.addrow{border:none;background:none;color:var(--muted);font-size:12px;padding:4px 10px 8px 30px;width:100%;text-align:left}
+.addrow:hover{color:var(--accent-text)}
+.addbtns{display:flex;gap:8px;margin-top:10px}
+.addbtns button{flex:1;border-style:dashed;padding:10px}
+
+/* ===== プレビュー ===== */
+#hintbar{display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--accent-weak);color:var(--accent-text);font-size:13px;flex-wrap:wrap;min-height:40px;flex:none}
+#hintbar .sz{padding:3px 10px;font-size:12px}
+#hintbar .sz.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+#pages{flex:1;overflow:auto;background:var(--desk);padding:18px;display:flex;flex-wrap:wrap;gap:22px;align-content:flex-start}
 .pwrap{display:flex;flex-direction:column;gap:6px}
-.phead{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);flex-wrap:wrap}
-.phead button{padding:2px 7px;font-size:12px}
+.phead{display:flex;align-items:center;gap:5px;font-size:12px;flex-wrap:wrap}
+.phead b{font-size:13px}
 .phead .cnt{color:var(--muted)}
-.page{position:relative;background:#d6d6d0;box-shadow:0 1px 4px rgba(0,0,0,.25);flex:none}
+.phead button{padding:3px 9px;font-size:12px}
+.page{position:relative;background:#cfcfc8;box-shadow:0 2px 8px rgba(0,0,0,.25);flex:none}
 .page .trim{position:absolute;background:#fff}
-.page .guide{position:absolute;border:1px dashed #9ab6ea;pointer-events:none}
-.pn{position:absolute;border:solid #111;background:#fff;cursor:pointer;overflow:hidden}
-.pn:hover{background:#f4f8ff}
-.pn.sel{outline:3px solid #f0a020;outline-offset:1px;background:#fffaf0}
+.page .guideline{position:absolute;border:1px dashed #9ab6ea;pointer-events:none}
+.pn{position:absolute;border:solid #111;background:#fff;cursor:pointer;overflow:hidden;transition:background .15s}
+.pn:hover{background:#f2f7ff}
+.pn.sel{outline:3px solid #f0a020;outline-offset:1px;background:#fffaf0;overflow:visible;z-index:2}
 .ptext{position:absolute;inset:0;color:#333;line-height:1.4;overflow:hidden}
 .ptext .li{white-space:pre-wrap;word-break:break-all}
-.pnum{position:absolute;top:2px;right:3px;font-size:11px;font-weight:700;color:#fff;background:#2f6fdf;border-radius:9px;padding:0 6px;line-height:17px}
-.psize{position:absolute;left:3px;bottom:2px;font-size:10px;color:#2f6fdf;font-weight:700}
-.pn .sizes{position:absolute;right:3px;bottom:3px;display:none;gap:2px}
-.pn:hover .sizes,.pn.sel .sizes{display:flex}
-.pn .sizes button{padding:0;width:20px;height:20px;font-size:11px;line-height:18px;background:#fff;color:#222;border:1px solid #9ab6ea}
-.pn .sizes button.on{background:#2f6fdf;color:#fff;border-color:#2f6fdf}
+.pnum{position:absolute;top:3px;right:3px;font-size:11px;font-weight:700;color:#fff;background:#2f6fdf;border-radius:9px;padding:0 6px;line-height:17px}
+.phov{position:absolute;inset:auto 0 0 0;text-align:center;font-size:11px;color:#2f6fdf;background:rgba(255,255,255,.85);padding:2px;display:none}
+.pn:hover:not(.sel) .phov{display:block}
+.pn .sizes{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);display:none;gap:3px;align-items:center;background:#fff;border:1px solid #f0a020;border-radius:999px;padding:3px 8px;font-size:11px;color:#555;box-shadow:0 2px 6px rgba(0,0,0,.2);white-space:nowrap}
+.pn.sel .sizes{display:flex}
+.pn .sizes button{padding:0;width:20px;height:20px;font-size:11px;border-radius:50%;background:#fff;color:#2f6fdf;border:2px solid #2f6fdf;line-height:16px}
+.pn .sizes button.on{background:#2f6fdf;color:#fff}
 
-dialog{border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);max-width:min(720px,calc(100vw - 32px));width:100%;padding:18px}
-dialog::backdrop{background:rgba(0,0,0,.4)}
-dialog h2{font-size:16px;margin:0 0 10px}
-dialog textarea{width:100%;height:50vh;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--surface2);line-height:1.5}
-dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap}
-#helpBody{line-height:1.7;max-height:65vh;overflow:auto}
+/* ===== ダイアログ ===== */
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);max-width:min(760px,calc(100vw - 32px));width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h2{font-size:17px;margin:0 0 4px}
+dialog .lead{color:var(--muted);font-size:13px;margin:0 0 14px}
+dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
+.choices{display:grid;gap:10px}
+.choice{display:grid;grid-template-columns:44px 1fr;gap:4px 12px;text-align:left;padding:14px;border-radius:12px;white-space:normal;position:relative}
+.choice .ic{grid-row:1/3;font-size:26px;display:grid;place-items:center}
+.choice b{font-size:15px}
+.choice small{color:var(--muted);font-size:12px;line-height:1.5}
+.choice.rec{border:2px solid var(--accent)}
+.badge{position:absolute;top:10px;right:12px;background:var(--accent);color:#fff;font-size:11px;border-radius:999px;padding:1px 8px}
+details.opt{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px 14px;margin-top:10px}
+.form label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.form label.ck{flex-direction:row;align-items:center;gap:6px;color:var(--text);font-size:13px}
+.form input[type=number],.form select{padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface2);color:var(--text)}
+.form h3{grid-column:1/-1;font-size:13px;margin:8px 0 0;color:var(--text);border-bottom:1px solid var(--line);padding-bottom:4px}
+.info{font-size:12px;color:var(--muted)}
+.diagram{display:flex;gap:14px;align-items:center;background:var(--surface2);border-radius:10px;padding:10px;flex-wrap:wrap}
+.diagram ul{margin:0;padding-left:18px;font-size:12px;line-height:1.8}
+#bulkText{width:100%;height:46vh;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--surface2);line-height:1.6}
+#helpBody{line-height:1.75;max-height:62vh;overflow:auto;font-size:13px}
 #helpBody h3{font-size:14px;margin:14px 0 4px}
 #helpBody ol,#helpBody ul{margin:4px 0;padding-left:22px}
+.wsteps{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.wstep{background:var(--surface2);border-radius:12px;padding:12px}
+.wstep .no{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;margin-bottom:6px}
+.wstep b{display:block;margin-bottom:4px}
+.wstep small{color:var(--muted);line-height:1.5;display:block}
 #progress{max-width:360px;text-align:center}
 
-/* タッチ端末では✂を常に表示、キー操作の表記は隠す */
+/* トースト */
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#2a2a2e;color:#fff;border-radius:10px;padding:10px 12px 10px 16px;display:flex;gap:12px;align-items:center;opacity:0;pointer-events:none;transition:.2s;z-index:100;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:calc(100vw - 32px)}
+#toast.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
+#toast button{background:transparent;color:#9dc0ff;border-color:#555;padding:3px 10px}
+
+/* スマホ用タブ */
+#mtabs{display:none}
 @media (hover:none){
-  .row .cut{opacity:.6}
-  kbd{display:none}
+  .row .cut{opacity:.85}
+  .pn .phov{display:none!important}
 }
 @media (max-width:860px){
-  main{grid-template-columns:1fr;height:auto}
-  #left{border-right:none;border-bottom:1px solid var(--line)}
-  #editor{max-height:55vh}
-  #pages{min-height:60vh;padding:12px}
+  main{grid-template-columns:1fr}
+  #left{border-right:none}
+  body.tab-memo #right, body.tab-preview #left{display:none}
+  #mtabs{display:flex;flex:none;border-top:1px solid var(--line);background:var(--surface)}
+  #mtabs button{flex:1;border:none;border-radius:0;padding:12px;font-weight:600;background:transparent}
+  #mtabs button.on{color:var(--accent-text);box-shadow:inset 0 3px 0 var(--accent)}
   header{padding:8px 12px}
-  .hint{display:none}
+  .logo span{display:none}
+  .step small{display:none}
+  .step{flex:none}
+  .step .arrow{display:none}
+  #pages{padding:12px}
+  .hide-sm{display:none}
 }
 </style>
 </head>
-<body>
+<body class="tab-memo">
 <header>
-  <h1>コマ割りメモ</h1>
-  <div class="hbtns">
-    <button id="btnBulk">一括入力</button>
-    <button id="btnSave">保存(.json)</button>
-    <button id="btnLoad">読込</button>
-    <input type="file" id="fileLoad" accept=".json,application/json" hidden>
-    <button id="btnNew">新規</button>
-    <button id="btnHelp">使い方</button>
+  <div class="logo">
+    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1.5" y="1.5" width="23" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="5" width="16" height="6" fill="#2f6fdf"/><rect x="5" y="13" width="7" height="8" fill="#2f6fdf" opacity=".55"/><rect x="14" y="13" width="7" height="8" fill="#2f6fdf" opacity=".3"/></svg>
+    <span>コマ割りメモ</span>
   </div>
+  <button class="ghost" id="btnUndo" title="元に戻す (Ctrl+Z)" disabled>↶ 元に戻す</button>
+  <button class="ghost hide-sm" id="btnRedo" title="やり直す (Ctrl+Y)" disabled>↷ やり直す</button>
+  <div class="hspace"></div>
+  <details class="menu" id="fileMenu">
+    <summary>ファイル ▾</summary>
+    <div class="items">
+      <button id="btnNew"><span>新しく始める</span><small>メモを空にします（元に戻すで復元できます）</small></button>
+      <button id="btnBulk"><span>テキストでまとめて入力</span><small>他のメモアプリの文章を貼り付けて取り込み</small></button>
+      <button id="btnSave"><span>作業ファイルを保存 (.json)</span><small>別のパソコン・スマホへ移すときに</small></button>
+      <button id="btnLoad"><span>作業ファイルを開く</span><small>保存した .json を読み込み</small></button>
+    </div>
+  </details>
+  <input type="file" id="fileLoad" accept=".json,application/json" hidden>
+  <button id="btnSettings" title="用紙サイズ・解像度・読む方向など">⚙ 用紙設定</button>
+  <button id="btnHelp" title="使い方">？</button>
+  <button class="primary" id="btnExport">⬇ 書き出す</button>
 </header>
+
+<!-- 4ステップのガイド -->
+<nav id="guide" aria-label="使い方の流れ">
+  <button class="step" data-step="1"><span class="no">1</span><span><b>メモを書く</b><small>左の欄に箇条書きで入力</small></span></button>
+  <button class="step" data-step="2"><span class="no">2</span><span><b>コマに分ける</b><small>行の「✂ ここから次のコマ」</small></span></button>
+  <button class="step" data-step="3"><span class="no">3</span><span><b>大きさを調整</b><small>右のコマをクリック → 5段階</small></span></button>
+  <button class="step" data-step="4"><span class="no">4</span><span><b>書き出す</b><small>PDF / PNG でクリスタへ</small></span></button>
+  <button class="ghost" id="guideClose" title="ガイドを隠す（？ボタンからいつでも見られます）">✕</button>
+</nav>
+
 <main>
   <section id="left">
-    <div class="ltool">
-      <span class="ttl">メモ</span>
-      <button id="btnPanelBreak" title="カーソル位置でコマを区切る">✂ コマ区切り<kbd>Ctrl+Enter</kbd></button>
-      <button id="btnPageBreak" title="カーソル位置でページを区切る">ページ区切り<kbd>Ctrl+Shift+Enter</kbd></button>
+    <div class="bar">
+      <h2>✏ メモ</h2>
+      <span class="sub">1枚のカード＝1コマ</span>
     </div>
     <div id="editor"></div>
-    <div class="hint">Enter: 次の項目 ／ Tab・Shift+Tab: 字下げ ／ 行頭の ✂: その行の前で区切る ／ 区切り線のラベルをクリック: コマ⇔ページ切替</div>
   </section>
   <section id="right">
-    <div class="rtool">
-      <span class="ttl">プレビュー</span>
-      <label class="info">表示サイズ <input type="range" min="220" max="900" step="10" data-s="zoom"></label>
-      <button id="btnSettings">用紙・レイアウト設定</button>
-      <button id="btnExport" class="primary">PNG書き出し</button>
+    <div class="bar">
+      <h2>▦ コマ割り</h2>
+      <span class="sub" id="pageCount"></span>
+      <div class="hspace"></div>
+      <label class="sub" style="display:flex;align-items:center;gap:6px">表示 <input type="range" min="220" max="900" step="10" data-s="zoom" title="プレビューの表示サイズ"></label>
     </div>
-
-    <!-- 用紙・レイアウト設定 -->
-    <div id="settings" class="panel hidden">
-      <label>用紙プリセット（目安・変更可）
-        <select data-s="preset">
-          <option value="b5">B5 同人誌</option>
-          <option value="a5">A5 同人誌</option>
-          <option value="a4">A4</option>
-          <option value="custom">カスタム</option>
-        </select>
-      </label>
-      <label>仕上がり 幅 (mm)<input type="number" step="1" min="50" data-s="trimW"></label>
-      <label>仕上がり 高さ (mm)<input type="number" step="1" min="50" data-s="trimH"></label>
-      <label>基本枠 幅 (mm)<input type="number" step="1" min="30" data-s="frameW"></label>
-      <label>基本枠 高さ (mm)<input type="number" step="1" min="30" data-s="frameH"></label>
-      <label>裁ち落とし幅 (mm)<input type="number" step="0.5" min="0" data-s="bleed"></label>
-      <label>解像度
-        <select data-s="dpi">
-          <option value="350">350 dpi（カラー）</option>
-          <option value="600">600 dpi（モノクロ）</option>
-        </select>
-      </label>
-      <label>読む方向
-        <select data-s="rtl">
-          <option value="1">右→左（マンガ）</option>
-          <option value="0">左→右</option>
-        </select>
-      </label>
-      <label>1ページの最大コマ数（0=無制限）<input type="number" step="1" min="0" max="20" data-s="maxPerPage"></label>
-      <label>コマ間（左右）(mm)<input type="number" step="0.5" min="0" data-s="gapX"></label>
-      <label>段間（上下）(mm)<input type="number" step="0.5" min="0" data-s="gapY"></label>
-      <label>枠線の太さ (mm)<input type="number" step="0.1" min="0.1" data-s="line"></label>
-      <label>メモ文字サイズ (mm)<input type="number" step="0.5" min="1" data-s="fontMm"></label>
-    </div>
-
-    <!-- 書き出し設定 -->
-    <div id="exportPanel" class="panel hidden">
-      <label>出力内容
-        <select data-e="mode">
-          <option value="combined">枠線＋メモ（1ページ1枚）</option>
-          <option value="layers">枠線とメモを別ファイル（レイヤー用）</option>
-          <option value="frames">枠線のみ</option>
-        </select>
-      </label>
-      <label class="ck"><input type="checkbox" data-e="text">メモ文字を入れる</label>
-      <label class="ck"><input type="checkbox" data-e="num">コマ番号を入れる</label>
-      <label class="ck"><input type="checkbox" data-e="whiteBg">背景を白で塗る（オフで透過）</label>
-      <div class="wide info" id="expInfo"></div>
-      <div class="wide" style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="primary" id="btnZip">全ページをZIPで書き出し</button>
-        <button id="btnEach">全ページを1枚ずつ保存</button>
-        <button class="primary" id="btnPdf" title="クリスタEXの「ストーリー → ページの取り込み」で全ページを一括でページ化できます">全ページを1つのPDFで書き出し（クリスタEX一括取り込み用）</button>
-      </div>
-    </div>
-
-    <div id="selbar"></div>
+    <div id="hintbar"></div>
     <div id="pages"></div>
   </section>
 </main>
+<nav id="mtabs">
+  <button data-tab="memo" class="on">✏ メモ</button>
+  <button data-tab="preview">▦ コマ割り</button>
+</nav>
 
-<dialog id="dlgBulk">
-  <h2>一括入力（テキストで編集）</h2>
-  <div class="info" style="margin-bottom:6px">1行＝1項目。行頭の「- 」「・」は省略可、字下げはスペース2つ。<b>---</b> でコマ区切り、<b>===</b> でページ区切り。</div>
-  <textarea id="bulkText" spellcheck="false"></textarea>
+<!-- 初回の案内 -->
+<dialog id="dlgWelcome">
+  <h2>コマ割りメモへようこそ</h2>
+  <p class="lead">箇条書きのメモから、マンガのコマ割りを作ってクリスタに持っていけます。4ステップだけです。</p>
+  <div class="wsteps">
+    <div class="wstep"><div class="no">1</div><b>メモを書く</b><small>左の欄に箇条書きで入力。Enter で次の行、Tab で字下げ。</small></div>
+    <div class="wstep"><div class="no">2</div><b>コマに分ける</b><small>行にカーソルを合わせると出る「✂ ここから次のコマ」を押すと、そこからが次のコマに。1枚のカードが1コマです。</small></div>
+    <div class="wstep"><div class="no">3</div><b>大きさを調整</b><small>右のコマをクリックして「小〜大」を選ぶだけ。ページ全体が自動できれいに割り直されます。</small></div>
+    <div class="wstep"><div class="no">4</div><b>書き出す</b><small>右上の「⬇ 書き出す」から。クリスタEXなら PDF で全ページを一括で取り込めます。</small></div>
+  </div>
+  <p class="info" style="margin-top:12px">最初はサンプルが入っています。自由に触ってみてください（間違えても「↶ 元に戻す」で戻せます）。</p>
   <div class="acts">
-    <label class="ck info" style="margin-right:auto;display:flex;align-items:center;gap:6px"><input type="checkbox" id="bulkBlank" checked>空行でもコマを区切る</label>
-    <button id="bulkCancel">キャンセル</button>
-    <button id="bulkApply" class="primary">反映する</button>
+    <button id="welcomeEmpty">空の状態から始める</button>
+    <button class="primary" id="welcomeOk">サンプルで試してみる</button>
   </div>
 </dialog>
 
+<!-- 書き出し -->
+<dialog id="dlgExport">
+  <h2>書き出す</h2>
+  <p class="lead" id="expInfo"></p>
+  <div class="choices">
+    <button class="choice rec" id="btnPdf"><span class="ic">📘</span><b>クリスタEXに全ページを一括で取り込む（PDF）</b><small>PDF 1ファイルにまとめます。クリスタEXのメニュー「ストーリー → ページの取り込み」で選ぶと、各ページが自動でそれぞれのページに入ります。</small><span class="badge">おすすめ</span></button>
+    <button class="choice" id="btnZip"><span class="ic">🗂</span><b>PNG画像をまとめて保存（ZIP）</b><small>page_001.png, page_002.png… の連番。クリスタ PRO / DEBUT や他のソフトで使うときに。各ページで「ファイル → 読み込み → 画像」。</small></button>
+    <button class="choice" id="btnEach"><span class="ic">🖼</span><b>PNG画像を1枚ずつ保存</b><small>ZIP を開けない環境向け。ページ数ぶん順番にダウンロードされます。</small></button>
+  </div>
+  <details class="opt">
+    <summary>書き出しの細かい設定</summary>
+    <div class="form">
+      <label>画像に入れる内容
+        <select data-e="mode">
+          <option value="combined">枠線＋メモ（1ページ1枚）</option>
+          <option value="layers">枠線とメモを別々の画像に（PNGのみ・レイヤー用）</option>
+          <option value="frames">枠線だけ</option>
+        </select>
+      </label>
+      <label class="ck"><input type="checkbox" data-e="text">メモの文字を入れる</label>
+      <label class="ck"><input type="checkbox" data-e="num">コマ番号を入れる</label>
+      <label class="ck"><input type="checkbox" data-e="whiteBg">背景を白にする（オフで透明・PNGのみ）</label>
+    </div>
+  </details>
+  <div class="acts">
+    <button id="btnOpenSettings">⚙ 用紙設定を確認</button>
+    <button id="expClose">閉じる</button>
+  </div>
+</dialog>
+
+<!-- 用紙・レイアウト設定 -->
+<dialog id="dlgSettings">
+  <h2>用紙設定</h2>
+  <p class="lead">クリスタで作る作品と同じ値にしておくと、書き出した画像がぴったり重なります。</p>
+  <div class="diagram">
+    <svg width="120" height="150" viewBox="0 0 120 150" aria-hidden="true">
+      <rect x="2" y="2" width="116" height="146" fill="#cfcfc8"/>
+      <rect x="10" y="10" width="100" height="130" fill="#fff"/>
+      <rect x="22" y="24" width="76" height="102" fill="none" stroke="#2f6fdf" stroke-dasharray="4 3" stroke-width="1.5"/>
+      <rect x="26" y="28" width="68" height="40" fill="none" stroke="#111" stroke-width="2"/>
+      <rect x="26" y="72" width="32" height="50" fill="none" stroke="#111" stroke-width="2"/>
+      <rect x="62" y="72" width="32" height="50" fill="none" stroke="#111" stroke-width="2"/>
+    </svg>
+    <ul>
+      <li><b>仕上がり</b>：白い部分。本になったときの紙の大きさ</li>
+      <li><b>裁ち落とし</b>：灰色の部分。印刷で切り落とされる余白</li>
+      <li><b>基本枠</b>：青い点線。コマはこの中に並びます</li>
+      <li>書き出す画像の大きさ ＝ 仕上がり＋裁ち落とし</li>
+    </ul>
+  </div>
+  <div class="form">
+    <h3>用紙</h3>
+    <label>よく使う大きさ
+      <select data-s="preset">
+        <option value="b5">B5 同人誌</option>
+        <option value="a5">A5 同人誌</option>
+        <option value="a4">A4</option>
+        <option value="custom">自分で入力</option>
+      </select>
+    </label>
+    <label>仕上がり 幅 (mm)<input type="number" step="1" min="50" data-s="trimW"></label>
+    <label>仕上がり 高さ (mm)<input type="number" step="1" min="50" data-s="trimH"></label>
+    <label>基本枠 幅 (mm)<input type="number" step="1" min="30" data-s="frameW"></label>
+    <label>基本枠 高さ (mm)<input type="number" step="1" min="30" data-s="frameH"></label>
+    <label>裁ち落とし (mm)<input type="number" step="0.5" min="0" data-s="bleed"></label>
+    <label>解像度
+      <select data-s="dpi">
+        <option value="350">350 dpi（カラー原稿）</option>
+        <option value="600">600 dpi（モノクロ原稿）</option>
+      </select>
+    </label>
+    <h3>コマの並び</h3>
+    <label>読む方向
+      <select data-s="rtl">
+        <option value="1">右から左（日本のマンガ）</option>
+        <option value="0">左から右</option>
+      </select>
+    </label>
+    <label>1ページに入れる最大コマ数（0＝制限なし）<input type="number" step="1" min="0" max="20" data-s="maxPerPage"></label>
+    <label>コマとコマの間・左右 (mm)<input type="number" step="0.5" min="0" data-s="gapX"></label>
+    <label>コマとコマの間・上下 (mm)<input type="number" step="0.5" min="0" data-s="gapY"></label>
+    <h3>見た目</h3>
+    <label>枠線の太さ (mm)<input type="number" step="0.1" min="0.1" data-s="line"></label>
+    <label>メモの文字の大きさ (mm)<input type="number" step="0.5" min="1" data-s="fontMm"></label>
+  </div>
+  <p class="info" id="setInfo"></p>
+  <div class="acts"><button class="primary" id="setClose">OK</button></div>
+</dialog>
+
+<!-- 一括入力 -->
+<dialog id="dlgBulk">
+  <h2>テキストでまとめて入力</h2>
+  <p class="lead">1行が1項目になります。<b>---</b> の行でコマを分け、<b>===</b> の行でページを分けます。行頭の「- 」「・」はあってもなくてもOK。スペース2つで字下げ。</p>
+  <textarea id="bulkText" spellcheck="false"></textarea>
+  <div class="acts">
+    <label class="info" style="margin-right:auto;display:flex;align-items:center;gap:6px"><input type="checkbox" id="bulkBlank" checked>空行でもコマを分ける</label>
+    <button id="bulkCancel">キャンセル</button>
+    <button class="primary" id="bulkApply">この内容にする</button>
+  </div>
+</dialog>
+
+<!-- 使い方 -->
 <dialog id="dlgHelp">
   <h2>使い方</h2>
   <div id="helpBody">
     <h3>1. メモを書く</h3>
     <ul>
-      <li>左の欄に箇条書きでメモを入力します。Enter で次の項目、Tab で字下げ。</li>
-      <li>複数行のテキストを貼り付けると、1行ずつ項目になります（<code>---</code> はコマ区切り、<code>===</code> はページ区切りとして読み込み）。</li>
+      <li>左のカードに箇条書きで入力します。<kbd>Enter</kbd> で次の行、<kbd>Tab</kbd> で字下げ、<kbd>Shift</kbd>+<kbd>Tab</kbd> で戻す。</li>
+      <li>カード下の「＋ 行を追加」、いちばん下の「＋ コマを追加」「＋ ページを追加」でも増やせます。</li>
+      <li>複数行の文章を貼り付けると、1行ずつ項目になります。</li>
     </ul>
-    <h3>2. 区切る</h3>
+    <h3>2. コマに分ける</h3>
     <ul>
-      <li>区切りたい位置にカーソルを置いて <kbd>Ctrl+Enter</kbd>（コマ区切り）／<kbd>Ctrl+Shift+Enter</kbd>（ページ区切り）。</li>
-      <li>行の左の ✂ を押すと、その行の前で区切ります。区切り線のラベルをクリックするとコマ⇔ページを切り替え、× で削除。</li>
-      <li>区切りと区切りの間のメモが 1 コマになります。1ページの最大コマ数を超えると自動で次ページへ送ります。</li>
+      <li>行にカーソルを合わせると出る「✂ ここから次のコマ」で、その行から下が次のコマになります。</li>
+      <li>文の途中で分けたいときは、分けたい位置にカーソルを置いて <kbd>Ctrl</kbd>+<kbd>Enter</kbd>（ページごと分けるなら <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd>）。</li>
+      <li>カード上部の「📄 新しいページから」でそのコマからページを変えられます。「前のコマとつなげる」で区切りを消せます。</li>
+      <li>1ページの最大コマ数（初期値6）を超えると自動で次のページに送ります（用紙設定で変更可）。</li>
     </ul>
-    <h3>3. コマの大きさを変える</h3>
+    <h3>3. 大きさを調整</h3>
     <ul>
-      <li>プレビューのコマをクリックして選択し、<kbd>1</kbd>〜<kbd>5</kbd> キー、または上部／コマ右下のボタンでサイズを5段階で変更します（3が標準）。</li>
-      <li>サイズに合わせてページ全体が自動で綺麗に割り直されます。ページ上部の「◀ ▶」で別の割り方の候補に切り替えられます。</li>
+      <li>右のコマをクリックすると「小 ①〜⑤ 大」が出ます。カード上部の ●○ でも変えられます。数字キー <kbd>1</kbd>〜<kbd>5</kbd> も使えます。</li>
+      <li>大きさに合わせてページ全体が自動で割り直されます。ページ上の「次の割り方 ▶」で別の並べ方の候補に切り替えられます。</li>
     </ul>
-    <h3>4-A. PDF でクリスタEXに一括取り込み（ページ自動振り分け）</h3>
-    <ol>
-      <li>「用紙・レイアウト設定」を、クリスタの作品と同じ仕上がりサイズ・裁ち落とし幅・解像度に合わせます。</li>
-      <li>「PNG書き出し」→「全ページを1つのPDFで書き出し」。PDFの1ページ＝コマ割りの1ページです（用紙サイズは仕上がり＋裁ち落とし）。</li>
-      <li>クリスタ EX で複数ページの作品を開き（または新規作成し）、メニュー「ストーリー → ページの取り込み」でこの PDF を選びます。変換設定のダイアログが出るので、作品と同じ解像度などを指定すると、PDFの各ページがそれぞれ1ページとして追加されます。</li>
-      <li>複数ページ作品・「ストーリー」メニューは CLIP STUDIO PAINT EX の機能です（PRO/DEBUT では使えません）。PDF の取り込みは比較的新しいバージョンで追加された機能のため、メニューに無い場合はクリスタを更新するか、下の 4-B の方法を使ってください。</li>
-    </ol>
-    <h3>4-B. PNG で書き出して CLIP STUDIO PAINT へ</h3>
-    <ol>
-      <li>「用紙・レイアウト設定」を、クリスタで使う作品と同じ仕上がりサイズ・基本枠・裁ち落とし幅・解像度に合わせます。出力画像のサイズは「仕上がり＋裁ち落とし」です（書き出しパネルにピクセル数を表示）。</li>
-      <li>「PNG書き出し」→「全ページをZIPで書き出し」。展開すると <code>page_001.png</code>, <code>page_002.png</code>… の連番で並びます。</li>
-      <li>クリスタで同じ設定のコミック作品を作成し（EX なら複数ページ作品としてページ数を合わせる）、各ページで「ファイル → 読み込み → 画像」から同じ番号の PNG を読み込みます。</li>
-      <li>PNG には解像度情報を埋め込んでいるので、キャンバスのピクセル数と解像度が一致していれば位置・大きさがそのまま合います。合わない場合はクリスタ側のキャンバスサイズ（ピクセル数）を確認してください。</li>
-      <li>「枠線とメモを別ファイル」で書き出すと、<code>_waku</code>（枠線）と <code>_memo</code>（メモ）を別レイヤーとして重ねられます。メモ側は不透明度を下げて下描きガイドに使えます。</li>
-    </ol>
-    <p class="info">※ 枠線は画像レイヤーとして入ります（クリスタのベクターのコマ枠フォルダーには自動変換されません）。メニュー名はクリスタのバージョンにより異なる場合があります。<br>※ 入力内容はこのブラウザに自動保存されます。別の端末へ移す場合は「保存(.json)」→「読込」を使ってください。</p>
+    <h3>4. 書き出してクリスタへ</h3>
+    <ul>
+      <li><b>クリスタEX（おすすめ）</b>：「⬇ 書き出す」→ PDF。クリスタEXで複数ページ作品を開き、「ストーリー → ページの取り込み」でPDFを選ぶと、変換設定のあと各ページが1ページずつ追加されます。作品と同じ解像度を指定してください。</li>
+      <li><b>PNG</b>：ZIPを展開した page_001.png… を、各ページで「ファイル → 読み込み → 画像」。画像には解像度情報が入っているので、キャンバスと同じ設定ならぴったり重なります。</li>
+      <li>枠線は画像として入ります（クリスタのコマ枠フォルダーには自動変換されません）。複数ページ作品と「ストーリー」メニューは EX の機能です。PDF の取り込みが見当たらない場合は、クリスタを最新版に更新するか PNG を使ってください。</li>
+    </ul>
+    <h3>保存について</h3>
+    <ul>
+      <li>入力内容はこのブラウザに自動保存されます。端末どうしでは同期されないので、別の端末に移すときは「ファイル → 作業ファイルを保存」→ 移した先で「作業ファイルを開く」。</li>
+    </ul>
   </div>
-  <div class="acts"><button id="helpClose" class="primary">閉じる</button></div>
+  <div class="acts"><button id="helpWelcome">はじめの案内をもう一度見る</button><button class="primary" id="helpClose">閉じる</button></div>
 </dialog>
 
 <dialog id="progress"><div id="progText">書き出し中…</div></dialog>
+<div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">元に戻す</button></div>
 
 <script>
 'use strict';
 // ===== 定数 =====
 const FONT = '"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif';
 const STORE_KEY = 'komawari-memo-v1';
+const UI_KEY = 'komawari-memo-ui';
 const PRESETS = {
   b5: {trimW:182, trimH:257, frameW:150, frameH:220, bleed:3},
   a5: {trimW:148, trimH:210, frameW:120, frameH:175, bleed:3},
@@ -272,6 +423,7 @@ const PRESETS = {
 };
 const DEFAULT_SETTINGS = {preset:'b5', ...PRESETS.b5, dpi:600, rtl:1, maxPerPage:6, gapX:2, gapY:5, line:0.6, fontMm:3.5, zoom:420};
 const DEFAULT_EXPORT = {mode:'combined', text:true, num:false, whiteBg:true};
+const SIZE_NAMES = ['', '小', 'やや小', '標準', 'やや大', '大'];
 const SAMPLE = `- 朝、主人公が目を覚ます
   - 目覚まし時計のアップ
 ---
@@ -288,7 +440,7 @@ const SAMPLE = `- 朝、主人公が目を覚ます
 - 曲がり角で誰かとぶつかる
 ---
 - 見知らぬ少女と目が合う
-  - 見開き気味に大きく`;
+  - 大きめのコマで`;
 
 // ===== ユーティリティ =====
 const $ = s => document.querySelector(s);
@@ -296,6 +448,9 @@ const uid = () => 'r' + Math.random().toString(36).slice(2, 9) + (Date.now() % 1
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const pad3 = n => String(n).padStart(3, '0');
 function el(tag, cls, text){ const e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
+function btn(cls, text, act, title){ const b = el('button', cls, text); if(act) b.dataset.act = act; if(title) b.title = title; return b; }
+function loadUI(){ try{ return JSON.parse(localStorage.getItem(UI_KEY)) || {}; }catch(e){ return {}; } }
+function saveUI(o){ try{ localStorage.setItem(UI_KEY, JSON.stringify({...loadUI(), ...o})); }catch(e){} }
 
 // ===== テキスト ⇔ 行データ =====
 // 箇条書きテキストを行データに変換
@@ -357,32 +512,78 @@ function save(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => { try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }, 300);
 }
+const firstVisit = !loadUI().welcomed;
 let state = load() || defaultState(true);
 let selKey = null;     // 選択中のコマ
 let lastPages = [];    // 直近に組んだページ
+
+// ===== 元に戻す／やり直す =====
+const hist = {undo:[], redo:[]};
+const snap = () => JSON.stringify({rows:state.rows, sizes:state.sizes, variants:state.variants});
+function pushHistory(){
+  hist.undo.push(snap());
+  if(hist.undo.length > 150) hist.undo.shift();
+  hist.redo.length = 0;
+  updateUndoButtons();
+}
+function restoreSnap(s){
+  const o = JSON.parse(s);
+  state.rows = o.rows; state.sizes = o.sizes; state.variants = o.variants;
+  if(selKey && !state.rows.some(r => r.id === selKey) && selKey !== '__start') selKey = null;
+  refreshAll(); save();
+}
+function undo(){
+  if(!hist.undo.length) return;
+  hist.redo.push(snap()); restoreSnap(hist.undo.pop()); updateUndoButtons();
+  toast('元に戻しました', false);
+}
+function redo(){
+  if(!hist.redo.length) return;
+  hist.undo.push(snap()); restoreSnap(hist.redo.pop()); updateUndoButtons();
+  toast('やり直しました', false);
+}
+function updateUndoButtons(){ $('#btnUndo').disabled = !hist.undo.length; $('#btnRedo').disabled = !hist.redo.length; }
+$('#btnUndo').addEventListener('click', undo);
+$('#btnRedo').addEventListener('click', redo);
+// 文字入力は「打ち始め」で1回だけ履歴に積む
+let typingTimer = null, typing = false;
+function noteTyping(){
+  if(!typing){ pushHistory(); typing = true; }
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => { typing = false; }, 1200);
+}
+
+// ===== トースト =====
+let toastTimer = null;
+function toast(msg, withUndo = true){
+  $('#toastMsg').textContent = msg;
+  $('#toastUndo').style.display = withUndo ? '' : 'none';
+  $('#toast').classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $('#toast').classList.remove('show'), withUndo ? 5000 : 1800);
+}
+$('#toastUndo').addEventListener('click', () => { $('#toast').classList.remove('show'); undo(); });
 
 // ===== コマ・ページの組み立て =====
 // 区切りごとにコマを作り、ページ区切り／最大コマ数でページに振り分ける
 function buildPages(){
   const S = state.settings;
-  const panels = [];
-  let cur = {key:'__start', items:[], startType:'start'};
-  let newPage = true;
-  const push = () => { panels.push({...cur, newPage}); newPage = false; };
+  const segs = [];
+  let cur = {key:'__start', items:[], startType:'start', breakRow:null};
   for(const r of state.rows){
     if(r.type === 'item'){ cur.items.push(r); continue; }
-    // 中身が空のコマは「コマ区切りで始まった場合」のみ残す（絵だけのコマ用）
-    if(cur.items.length || cur.startType === 'panel') push();
-    if(r.type === 'page') newPage = true;
-    cur = {key:r.id, items:[], startType:r.type};
+    segs.push(cur);
+    cur = {key:r.id, items:[], startType:r.type, breakRow:r};
   }
-  if(cur.items.length || cur.startType === 'panel' || !panels.length) push();
-
+  segs.push(cur);
+  if(segs.length > 1 && !segs[0].items.length) segs.shift(); // 先頭が区切りで始まる場合
   const pages = [];
   let pg = null;
   const max = S.maxPerPage | 0;
-  for(const p of panels){
-    if(!pg || (p.newPage && pg.panels.length) || (max > 0 && pg.panels.length >= max)){ pg = {panels:[]}; pages.push(pg); }
+  for(const p of segs){
+    const forced = p.startType === 'page';
+    const auto = !!pg && !forced && max > 0 && pg.panels.length >= max;
+    if(!pg || (forced && pg.panels.length) || auto){ pg = {panels:[], auto}; pages.push(pg); }
     p.size = clamp(state.sizes[p.key] || 3, 1, 5);
     pg.panels.push(p);
   }
@@ -523,31 +724,68 @@ function frameOrigin(){
   const S = state.settings;
   return {ox: S.bleed + (S.trimW - S.frameW) / 2, oy: S.bleed + (S.trimH - S.frameH) / 2};
 }
+function findPanel(key){
+  for(const pg of lastPages) for(const p of pg.panels) if(p.key === key) return p;
+  return null;
+}
+function panelOfRow(id){
+  for(const pg of lastPages) for(const p of pg.panels){ if(p.key === id || p.items.some(it => it.id === id)) return p; }
+  return null;
+}
 
-// ===== エディタ =====
+// ===== エディタ（コマごとのカード） =====
 const editorEl = $('#editor');
-function itemEl(r){
-  const d = el('div', 'row item'); d.dataset.id = r.id; d.style.setProperty('--ind', r.indent);
-  const cut = el('button', 'cut', '✂'); cut.title = 'この行の前でコマを区切る'; cut.tabIndex = -1; cut.dataset.act = 'cut';
-  const b = el('span', 'bullet', r.indent ? '◦' : '・');
-  const ta = el('textarea'); ta.rows = 1; ta.value = r.text; ta.placeholder = 'メモを入力';
-  const tag = el('span', 'tag'); tag.dataset.act = 'tag';
-  d.append(cut, b, ta, tag);
+function sizeDots(p){
+  const d = el('span', 'dots'); d.title = 'コマの大きさ（5段階）';
+  d.append('小');
+  for(let s = 1; s <= 5; s++){
+    const b = btn(s <= p.size ? 'on' : '', '', 'size', `大きさ：${SIZE_NAMES[s]}`);
+    b.dataset.size = s; b.setAttribute('aria-label', `大きさ ${SIZE_NAMES[s]}`);
+    d.appendChild(b);
+  }
+  d.append('大');
   return d;
 }
-function breakEl(r){
-  const d = el('div', 'row brk ' + r.type); d.dataset.id = r.id;
-  const lbl = el('button', 'lbl', r.type === 'page' ? 'ページ区切り' : 'コマ区切り'); lbl.dataset.act = 'toggle'; lbl.title = 'クリックでコマ⇔ページを切替';
-  const del = el('button', 'del', '×'); del.dataset.act = 'del'; del.title = '区切りを削除';
-  const tag = el('span', 'tag'); tag.dataset.act = 'tag';
-  d.append(el('span', 'ln'), lbl, el('span', 'ln'), tag, del);
+function itemEl(r){
+  const d = el('div', 'row'); d.dataset.id = r.id; d.style.setProperty('--ind', r.indent);
+  const b = el('span', 'bullet', r.indent ? '◦' : '・');
+  const ta = el('textarea'); ta.rows = 1; ta.value = r.text; ta.placeholder = 'メモを入力…';
+  const cut = btn('cut', '✂ ここから次のコマ', 'cut', 'この行から下を次のコマにします（文の途中なら Ctrl+Enter）');
+  cut.tabIndex = -1;
+  d.append(b, ta, cut);
   return d;
 }
 function autosize(ta){ ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
 function renderEditor(){
-  editorEl.innerHTML = '';
   const frag = document.createDocumentFragment();
-  for(const r of state.rows) frag.appendChild(r.type === 'item' ? itemEl(r) : breakEl(r));
+  let n = 0;
+  for(const pg of lastPages){
+    const pb = el('div', 'pagebar', `${pg.index + 1}ページ目`);
+    if(pg.auto) pb.appendChild(el('small', '', '（コマ数の上限で自動改ページ）'));
+    frag.appendChild(pb);
+    for(const p of pg.panels){
+      n++;
+      const card = el('div', 'card' + (p.key === selKey ? ' sel' : '')); card.dataset.key = p.key;
+      const head = el('div', 'chead'); head.dataset.act = 'select';
+      head.append(el('span', 'cno', `コマ ${p.idx + 1}`), sizeDots(p));
+      if(p.breakRow){
+        const chips = el('span', 'chips');
+        chips.append(
+          btn('chip' + (p.startType === 'page' ? ' on' : ''), '📄 新しいページから', 'togglePage', p.startType === 'page' ? 'クリックで解除（前のページに続けます）' : 'このコマから次のページにします'),
+          btn('chip', '⤒ 前のコマとつなげる', 'merge', 'この区切りを消して、前のコマと1つにします'));
+        head.appendChild(chips);
+      }
+      const rows = el('div', 'rows');
+      if(p.items.length) p.items.forEach(it => rows.appendChild(itemEl(it)));
+      else rows.appendChild(el('div', 'empty', 'メモなし（絵だけのコマ）'));
+      card.append(head, rows, btn('addrow', '＋ 行を追加', 'addrow', 'このコマにメモの行を追加'));
+      frag.appendChild(card);
+    }
+  }
+  const adds = el('div', 'addbtns');
+  adds.append(btn('', '＋ コマを追加', 'addPanel', '最後に新しいコマを追加'), btn('', '＋ ページを追加', 'addPage', '最後に新しいページを追加'));
+  frag.appendChild(adds);
+  editorEl.innerHTML = '';
   editorEl.appendChild(frag);
   editorEl.querySelectorAll('textarea').forEach(autosize);
 }
@@ -555,16 +793,23 @@ const rowIndex = id => state.rows.findIndex(r => r.id === id);
 function focusRow(id, pos){
   const ta = editorEl.querySelector(`.row[data-id="${id}"] textarea`);
   if(!ta) return;
-  ta.focus();
+  ta.focus({preventScroll:true});
+  ta.closest('.row').scrollIntoView({block:'nearest'});
   const p = pos == null ? ta.value.length : clamp(pos, 0, ta.value.length);
   ta.setSelectionRange(p, p);
 }
+// 全体を描き直す
+function refreshAll(){
+  if(!state.rows.some(r => r.type === 'item')) state.rows.push({id:uid(), type:'item', text:'', indent:0});
+  lastPages = buildPages();
+  if(selKey && !findPanel(selKey)) selKey = null;
+  renderEditor(); renderPreview(); updateGuide();
+}
 // 構造が変わったときの再描画
 function commit(focusId, pos){
-  if(!state.rows.some(r => r.type === 'item')) state.rows.push({id:uid(), type:'item', text:'', indent:0});
-  renderEditor();
+  refreshAll();
   if(focusId) focusRow(focusId, pos);
-  renderPreview(); save();
+  save();
 }
 // カーソル位置で区切りを入れる
 function insertBreakAt(i, s, en, type){
@@ -573,17 +818,20 @@ function insertBreakAt(i, s, en, type){
   const br = {id:uid(), type};
   if(!before){ // 行頭なら、その行の前に区切り
     r.text = after;
-    state.rows.splice(i, 0, br); commit(r.id, 0); return;
+    state.rows.splice(i, 0, br); commit(r.id, 0);
+  }else{
+    r.text = before;
+    const nr = {id:uid(), type:'item', text:after, indent:0};
+    state.rows.splice(i + 1, 0, br, nr); commit(nr.id, 0);
   }
-  r.text = before;
-  const nr = {id:uid(), type:'item', text:after, indent:0};
-  state.rows.splice(i + 1, 0, br, nr); commit(nr.id, 0);
+  toast(type === 'page' ? 'ここから次のページにしました' : 'ここから次のコマにしました');
 }
 function findItem(i, dir){
   for(let j = i + dir; j >= 0 && j < state.rows.length; j += dir) if(state.rows[j].type === 'item') return state.rows[j];
   return null;
 }
 
+editorEl.addEventListener('beforeinput', e => { if(e.target.tagName === 'TEXTAREA') noteTyping(); });
 editorEl.addEventListener('input', e => {
   const ta = e.target; if(ta.tagName !== 'TEXTAREA') return;
   const r = state.rows[rowIndex(ta.closest('.row').dataset.id)];
@@ -599,7 +847,7 @@ editorEl.addEventListener('keydown', e => {
   const s = ta.selectionStart, en = ta.selectionEnd, v = ta.value;
   r.text = v;
   if(e.key === 'Enter'){
-    e.preventDefault();
+    e.preventDefault(); pushHistory();
     if(e.ctrlKey || e.metaKey){ insertBreakAt(i, s, en, e.shiftKey ? 'page' : 'panel'); return; }
     if(!v && r.indent > 0){ r.indent--; commit(id, 0); return; }
     r.text = v.slice(0, s);
@@ -607,20 +855,20 @@ editorEl.addEventListener('keydown', e => {
     state.rows.splice(i + 1, 0, nr); commit(nr.id, 0); return;
   }
   if(e.key === 'Tab'){
-    e.preventDefault();
+    e.preventDefault(); pushHistory();
     r.indent = clamp(r.indent + (e.shiftKey ? -1 : 1), 0, 3); commit(id, s); return;
   }
   if(e.key === 'Backspace' && s === 0 && en === 0){
-    if(r.indent > 0){ e.preventDefault(); r.indent--; commit(id, 0); return; }
+    if(r.indent > 0){ e.preventDefault(); pushHistory(); r.indent--; commit(id, 0); return; }
     const p = state.rows[i - 1]; if(!p) return;
-    e.preventDefault();
-    if(p.type !== 'item'){ state.rows.splice(i - 1, 1); commit(id, 0); return; } // 直前の区切りを消す
+    e.preventDefault(); pushHistory();
+    if(p.type !== 'item'){ state.rows.splice(i - 1, 1); commit(id, 0); toast('前のコマとつなげました'); return; }
     const pos = p.text.length; p.text += v; state.rows.splice(i, 1); commit(p.id, pos); return;
   }
   if(e.key === 'Delete' && s === v.length && en === v.length){
     const nx = state.rows[i + 1]; if(!nx) return;
-    e.preventDefault();
-    if(nx.type !== 'item'){ state.rows.splice(i + 1, 1); commit(id, s); return; }
+    e.preventDefault(); pushHistory();
+    if(nx.type !== 'item'){ state.rows.splice(i + 1, 1); commit(id, s); toast('次のコマとつなげました'); return; }
     r.text = v + nx.text; state.rows.splice(i + 1, 1); commit(id, s); return;
   }
   if(e.key === 'ArrowUp' && s === 0 && en === 0){
@@ -635,7 +883,7 @@ editorEl.addEventListener('paste', e => {
   const ta = e.target; if(ta.tagName !== 'TEXTAREA') return;
   const txt = (e.clipboardData || window.clipboardData).getData('text');
   if(!txt || !/\n/.test(txt.trim())) return;
-  e.preventDefault();
+  e.preventDefault(); pushHistory();
   const i = rowIndex(ta.closest('.row').dataset.id), cur = state.rows[i];
   const before = ta.value.slice(0, ta.selectionStart), after = ta.value.slice(ta.selectionEnd);
   const parsed = parseText(txt, false);
@@ -644,86 +892,67 @@ editorEl.addEventListener('paste', e => {
   let ins = parsed;
   if(parsed[0].type === 'item'){ if(!before) cur.indent = parsed[0].indent; cur.text = before + parsed[0].text; ins = parsed.slice(1); }
   state.rows.splice(i + 1, 0, ...ins);
-  let last = ins.length ? ins[ins.length - 1] : cur, pos;
+  let last = ins.length ? ins[ins.length - 1] : cur;
   if(last.type !== 'item'){ last = {id:uid(), type:'item', text:'', indent:0}; state.rows.splice(i + 1 + ins.length, 0, last); }
-  pos = last.text.length; last.text += after;
+  const pos = last.text.length; last.text += after;
   commit(last.id, pos);
+  toast(`${parsed.filter(r => r.type === 'item').length} 行を貼り付けました`);
 });
 editorEl.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if(!b) return;
-  const row = b.closest('.row'), i = rowIndex(row.dataset.id), r = state.rows[i];
-  if(!r) return;
   const act = b.dataset.act;
-  if(act === 'cut'){ state.rows.splice(i, 0, {id:uid(), type:'panel'}); commit(r.id, 0); }
-  else if(act === 'toggle'){ r.type = r.type === 'page' ? 'panel' : 'page'; commit(); }
-  else if(act === 'del'){ state.rows.splice(i, 1); commit(); }
-  else if(act === 'tag'){ const p = panelOfRow(r.id); if(p) selectPanel(p.key, 'preview'); }
+  const card = b.closest('.card');
+  const p = card ? findPanel(card.dataset.key) : null;
+  if(act === 'addPanel' || act === 'addPage'){
+    pushHistory();
+    const nr = {id:uid(), type:'item', text:'', indent:0};
+    state.rows.push({id:uid(), type: act === 'addPage' ? 'page' : 'panel'}, nr);
+    commit(nr.id, 0); return;
+  }
+  if(!p) return;
+  if(act === 'cut'){
+    pushHistory();
+    const id = b.closest('.row').dataset.id;
+    state.rows.splice(rowIndex(id), 0, {id:uid(), type:'panel'});
+    commit(id, 0); toast('ここから次のコマにしました'); return;
+  }
+  if(act === 'size'){ e.stopPropagation(); setSize(p.key, +b.dataset.size); return; }
+  if(act === 'togglePage'){
+    pushHistory();
+    p.breakRow.type = p.breakRow.type === 'page' ? 'panel' : 'page';
+    commit(); toast(p.breakRow.type === 'page' ? 'このコマから新しいページにしました' : '前のページに続けました'); return;
+  }
+  if(act === 'merge'){
+    pushHistory();
+    state.rows.splice(rowIndex(p.breakRow.id), 1);
+    commit(p.items[0] && p.items[0].id, 0); toast('前のコマとつなげました'); return;
+  }
+  if(act === 'addrow'){
+    pushHistory();
+    const nr = {id:uid(), type:'item', text:'', indent:0};
+    const after = p.items.length ? p.items[p.items.length - 1].id : (p.breakRow ? p.breakRow.id : null);
+    state.rows.splice(after ? rowIndex(after) + 1 : 0, 0, nr);
+    commit(nr.id, 0); return;
+  }
+  if(act === 'select' && e.target === b || (act === 'select' && !e.target.closest('button'))){
+    selectPanel(p.key, 'preview');
+  }
 });
 editorEl.addEventListener('focusin', e => {
   if(e.target.tagName !== 'TEXTAREA') return;
   const p = panelOfRow(e.target.closest('.row').dataset.id);
-  if(p && p.key !== selKey) selectPanel(p.key, 'previewNearest');
+  if(p && p.key !== selKey) selectPanel(p.key, 'previewQuiet');
 });
-// 最後にカーソルがあった位置（スマホでボタンを押すとフォーカスが外れるため）
-let lastCaret = null;
-document.addEventListener('selectionchange', () => {
-  const ta = document.activeElement;
-  if(ta && ta.tagName === 'TEXTAREA' && editorEl.contains(ta)) lastCaret = {id:ta.closest('.row').dataset.id, s:ta.selectionStart, en:ta.selectionEnd};
-});
-function panelOfRow(id){
-  for(const pg of lastPages) for(const p of pg.panels){ if(p.key === id || p.items.some(it => it.id === id)) return p; }
-  return null;
-}
-// ツールバーの区切りボタン（フォーカスを奪わない）
-function toolbarBreak(type){
-  const ta = document.activeElement;
-  if(ta && ta.tagName === 'TEXTAREA' && editorEl.contains(ta)){
-    const i = rowIndex(ta.closest('.row').dataset.id);
-    state.rows[i].text = ta.value;
-    insertBreakAt(i, ta.selectionStart, ta.selectionEnd, type);
-  }else if(lastCaret && rowIndex(lastCaret.id) >= 0){
-    const i = rowIndex(lastCaret.id), len = state.rows[i].text.length;
-    insertBreakAt(i, Math.min(lastCaret.s, len), Math.min(lastCaret.en, len), type);
-  }else{
-    const nr = {id:uid(), type:'item', text:'', indent:0};
-    state.rows.push({id:uid(), type}, nr); commit(nr.id, 0);
-  }
-}
-for(const [btn, type] of [['#btnPanelBreak', 'panel'], ['#btnPageBreak', 'page']]){
-  $(btn).addEventListener('mousedown', e => e.preventDefault());
-  $(btn).addEventListener('click', () => toolbarBreak(type));
-}
-
-// エディタ側のコマ番号タグ・色分け・選択表示
-function renderTags(){
-  const info = new Map(); let n = 0;
-  for(const pg of lastPages) for(const p of pg.panels){
-    const seg = (n++ % 2) ? 'seg-b' : 'seg-a';
-    const label = `P${p.page + 1}-${p.idx + 1}・S${p.size}`;
-    if(p.items.length){
-      p.items.forEach((it, j) => info.set(it.id, {seg, sel:p.key === selKey, tag:j === 0 ? label : ''}));
-    }else{
-      info.set(p.key, {seg:'', sel:p.key === selKey, tag:'空コマ ' + label});
-    }
-  }
-  for(const row of editorEl.children){
-    const v = info.get(row.dataset.id);
-    row.classList.remove('seg-a', 'seg-b', 'sel');
-    if(v){ if(v.seg) row.classList.add(v.seg); if(v.sel) row.classList.add('sel'); }
-    const tag = row.querySelector('.tag'); if(tag) tag.textContent = v ? v.tag : '';
-  }
-}
 
 // ===== プレビュー =====
 const pagesEl = $('#pages');
 let previewTimer = null;
-function schedulePreview(){ clearTimeout(previewTimer); previewTimer = setTimeout(renderPreview, 150); }
+function schedulePreview(){ clearTimeout(previewTimer); previewTimer = setTimeout(() => { lastPages = buildPages(); renderPreview(); updateGuide(); }, 150); }
 function renderPreview(){
   clearTimeout(previewTimer);
   const S = state.settings;
-  lastPages = buildPages();
   const cw = S.trimW + 2 * S.bleed, ch = S.trimH + 2 * S.bleed;
-  const avail = pagesEl.clientWidth - 32;
+  const avail = pagesEl.clientWidth - 36;
   const k = (avail > 100 ? Math.min(S.zoom, avail) : S.zoom) / cw; // mm → 画面px（画面幅を超えない）
   const {ox, oy} = frameOrigin();
   const fs = S.fontMm * k, pad = 1.5 * k;
@@ -731,25 +960,26 @@ function renderPreview(){
   for(const pg of lastPages){
     const wrap = el('div', 'pwrap'); wrap.dataset.page = pg.index;
     const head = el('div', 'phead');
-    head.append(el('b', '', `P${pg.index + 1}`), el('span', 'cnt', `${pg.panels.length}コマ`));
-    const prev = el('button', '', '◀'); prev.dataset.act = 'prev'; prev.title = '前の割り方';
-    const next = el('button', '', '▶'); next.dataset.act = 'next'; next.title = '次の割り方';
-    head.append(prev, el('span', 'cnt', `割り方 ${pg.variant + 1}/${pg.nCands}`), next);
-    const rs = el('button', '', 'サイズを戻す'); rs.dataset.act = 'reset'; rs.title = 'このページのコマサイズを全て3に';
-    const png = el('button', '', 'PNG'); png.dataset.act = 'png'; png.title = 'このページだけPNG保存';
-    head.append(rs, png);
+    head.append(el('b', '', `${pg.index + 1}ページ目`), el('span', 'cnt', `${pg.panels.length}コマ`));
+    if(pg.nCands > 1){
+      head.append(btn('', '◀', 'prev', '前の割り方に戻す'),
+                  btn('', `次の割り方 ▶ (${pg.variant + 1}/${pg.nCands})`, 'next', '大きさはそのままで、コマの並べ方の別の候補に切り替えます'));
+    }
+    if(pg.panels.some(p => p.size !== 3)) head.append(btn('', '↺ 大きさを戻す', 'reset', 'このページのコマの大きさをすべて「標準」に戻します'));
+    head.append(btn('', '⬇ PNG', 'png', 'このページだけPNG画像で保存'));
 
     const page = el('div', 'page');
     page.style.width = cw * k + 'px'; page.style.height = ch * k + 'px';
     const trim = el('div', 'trim');
     Object.assign(trim.style, {left:S.bleed * k + 'px', top:S.bleed * k + 'px', width:S.trimW * k + 'px', height:S.trimH * k + 'px'});
-    const guide = el('div', 'guide');
+    const guide = el('div', 'guideline');
     Object.assign(guide.style, {left:ox * k + 'px', top:oy * k + 'px', width:S.frameW * k + 'px', height:S.frameH * k + 'px'});
     page.append(trim, guide);
 
     pg.panels.forEach((p, j) => {
       const r = pg.rects[j];
       const d = el('div', 'pn' + (p.key === selKey ? ' sel' : '')); d.dataset.key = p.key;
+      d.title = `コマ ${j + 1}（大きさ：${SIZE_NAMES[p.size]}）`;
       Object.assign(d.style, {left:(ox + r.x) * k + 'px', top:(oy + r.y) * k + 'px', width:r.w * k + 'px', height:r.h * k + 'px',
         borderWidth:Math.max(1, S.line * k) + 'px'});
       const t = el('div', 'ptext'); t.style.fontSize = fs + 'px'; t.style.padding = pad + 'px';
@@ -760,8 +990,10 @@ function renderPreview(){
         t.appendChild(li);
       }
       const sizes = el('div', 'sizes');
-      for(let s = 1; s <= 5; s++){ const b = el('button', s === p.size ? 'on' : '', s); b.dataset.size = s; b.title = 'サイズ ' + s; sizes.appendChild(b); }
-      d.append(t, el('span', 'pnum', j + 1), el('span', 'psize', 'S' + p.size), sizes);
+      sizes.append('小');
+      for(let s = 1; s <= 5; s++){ const b = el('button', s === p.size ? 'on' : '', s); b.dataset.size = s; b.title = SIZE_NAMES[s]; sizes.appendChild(b); }
+      sizes.append('大');
+      d.append(t, el('span', 'pnum', j + 1), el('div', 'phov', 'クリックで大きさを変える'), sizes);
       page.appendChild(d);
     });
     wrap.append(head, page);
@@ -769,49 +1001,52 @@ function renderPreview(){
   }
   pagesEl.innerHTML = '';
   pagesEl.appendChild(frag);
-  if(selKey && !findPanel(selKey)) selKey = null;
-  renderTags(); renderSelbar(); renderExpInfo();
-}
-function findPanel(key){
-  for(const pg of lastPages) for(const p of pg.panels) if(p.key === key) return p;
-  return null;
+  $('#pageCount').textContent = `全 ${lastPages.length} ページ・${lastPages.reduce((a, p) => a + p.panels.length, 0)} コマ`;
+  renderHintbar();
 }
 function selectPanel(key, scroll){
   selKey = key;
   pagesEl.querySelectorAll('.pn').forEach(d => d.classList.toggle('sel', d.dataset.key === key));
-  renderTags(); renderSelbar();
-  if(scroll === 'preview' || scroll === 'previewNearest'){
+  editorEl.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', c.dataset.key === key));
+  renderHintbar();
+  if(!key) return;
+  if(scroll === 'preview' || scroll === 'previewQuiet'){
     const d = pagesEl.querySelector(`.pn[data-key="${key}"]`);
-    if(d) d.scrollIntoView({block:'nearest', inline:'nearest', behavior: scroll === 'preview' ? 'smooth' : 'auto'});
+    if(d && $('#right').offsetParent) d.scrollIntoView({block:'nearest', inline:'nearest', behavior: scroll === 'preview' ? 'smooth' : 'auto'});
   }else if(scroll === 'editor'){
-    const p = findPanel(key);
-    const id = p && (p.items[0] ? p.items[0].id : p.key);
-    const row = id && editorEl.querySelector(`.row[data-id="${id}"]`);
-    if(row) row.scrollIntoView({block:'nearest', behavior:'smooth'});
+    const c = editorEl.querySelector(`.card[data-key="${key}"]`);
+    if(c && $('#left').offsetParent){
+      c.scrollIntoView({block:'nearest', behavior:'smooth'});
+      c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+    }
   }
 }
 function setSize(key, size){
-  const p = findPanel(key); if(!p) return;
+  const p = findPanel(key); if(!p || p.size === size) { if(p) selectPanel(key); return; }
+  pushHistory();
   state.sizes[key] = size;
-  state.variants[lastPages[p.page].key] = 0; // サイズが変わったら最良の割り方から
-  renderPreview(); save();
+  state.variants[lastPages[p.page].key] = 0; // 大きさが変わったら最良の割り方から
+  selKey = key;
+  refreshAll(); save();
 }
-function renderSelbar(){
-  const bar = $('#selbar'); bar.innerHTML = '';
+function renderHintbar(){
+  const bar = $('#hintbar'); bar.innerHTML = '';
   const p = selKey && findPanel(selKey);
-  if(!p){ bar.appendChild(el('span', 'info', 'コマをクリックして選択 → 1〜5キー（またはボタン）でサイズを変更。3が標準です。')); return; }
-  bar.appendChild(el('b', '', `P${p.page + 1} コマ${p.idx + 1}`));
-  bar.appendChild(el('span', 'info', 'サイズ'));
+  if(!p){ bar.append('💡 コマをクリックすると、大きさを「小〜大」の5段階で変えられます'); return; }
+  bar.appendChild(el('b', '', `${p.page + 1}ページ目・コマ ${p.idx + 1}`));
+  bar.append(' の大きさ：');
   for(let s = 1; s <= 5; s++){
-    const b = el('button', 'sz' + (s === p.size ? ' on' : ''), ['', '小', 'やや小', '標準', 'やや大', '大'][s]);
+    const b = el('button', 'sz' + (s === p.size ? ' on' : ''), SIZE_NAMES[s]);
+    b.title = `数字キー ${s} でも変更できます`;
     b.addEventListener('click', () => setSize(p.key, s));
     bar.appendChild(b);
   }
-  bar.appendChild(el('span', 'info', '（Esc で選択解除）'));
+  const x = btn('ghost', '✕ 選択をやめる'); x.addEventListener('click', () => selectPanel(null));
+  bar.appendChild(x);
 }
 pagesEl.addEventListener('click', e => {
   const sb = e.target.closest('.sizes button');
-  if(sb){ const key = sb.closest('.pn').dataset.key; selKey = key; setSize(key, +sb.dataset.size); return; }
+  if(sb){ setSize(sb.closest('.pn').dataset.key, +sb.dataset.size); return; }
   const pn = e.target.closest('.pn');
   if(pn){ selectPanel(pn.dataset.key, 'editor'); return; }
   const b = e.target.closest('.phead button');
@@ -819,11 +1054,14 @@ pagesEl.addEventListener('click', e => {
     const pg = lastPages[+b.closest('.pwrap').dataset.page]; if(!pg) return;
     const act = b.dataset.act;
     if(act === 'prev' || act === 'next'){
+      pushHistory();
       const n = pg.nCands || 1;
       state.variants[pg.key] = (pg.variant + (act === 'next' ? 1 : -1) + n) % n;
-      renderPreview(); save();
+      refreshAll(); save();
     }else if(act === 'reset'){
-      pg.panels.forEach(p => delete state.sizes[p.key]); state.variants[pg.key] = 0; renderPreview(); save();
+      pushHistory();
+      pg.panels.forEach(p => delete state.sizes[p.key]); state.variants[pg.key] = 0;
+      refreshAll(); save(); toast('このページの大きさを標準に戻しました');
     }else if(act === 'png'){
       exportPages([pg], false);
     }
@@ -831,12 +1069,52 @@ pagesEl.addEventListener('click', e => {
   }
   if(e.target === pagesEl) selectPanel(null);
 });
+// キーボード操作（元に戻す・大きさ変更）
 document.addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey;
+  if(document.querySelector('dialog[open]')) return;
+  if(mod && !e.altKey && (e.key === 'z' || e.key === 'Z')){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if(mod && (e.key === 'y' || e.key === 'Y')){ e.preventDefault(); redo(); return; }
   const t = e.target.tagName;
-  if(t === 'TEXTAREA' || t === 'INPUT' || t === 'SELECT' || document.querySelector('dialog[open]')) return;
+  if(t === 'TEXTAREA' || t === 'INPUT' || t === 'SELECT') return;
   if(selKey && /^[1-5]$/.test(e.key)){ e.preventDefault(); setSize(selKey, +e.key); }
   if(e.key === 'Escape' && selKey) selectPanel(null);
 });
+
+// ===== ガイド =====
+function updateGuide(){
+  const items = state.rows.filter(r => r.type === 'item');
+  const done = {
+    1: items.some(r => r.text.trim()),
+    2: lastPages.reduce((a, p) => a + p.panels.length, 0) > 1,
+    3: Object.values(state.sizes).some(v => v !== 3),
+    4: !!loadUI().exported,
+  };
+  document.querySelectorAll('.step').forEach(s => s.classList.toggle('done', !!done[s.dataset.step]));
+}
+document.querySelectorAll('.step').forEach(s => s.addEventListener('click', () => {
+  const n = s.dataset.step;
+  if(n === '1' || n === '2'){
+    setTab('memo');
+    const ta = editorEl.querySelector('textarea'); if(ta) ta.focus();
+    if(n === '2') toast('行にカーソルを合わせると出る「✂ ここから次のコマ」を押してください', false);
+  }else if(n === '3'){
+    setTab('preview');
+    const p = lastPages[0] && lastPages[0].panels[0];
+    if(p) selectPanel(p.key, 'preview');
+    toast('コマを選んで「小〜大」を押すと、ページ全体が割り直されます', false);
+  }else openExport();
+}));
+$('#guideClose').addEventListener('click', () => { $('#guide').classList.add('hidden'); saveUI({guideHidden:true}); });
+
+// ===== スマホ用タブ =====
+function setTab(t){
+  document.body.classList.toggle('tab-memo', t === 'memo');
+  document.body.classList.toggle('tab-preview', t === 'preview');
+  document.querySelectorAll('#mtabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  if(t === 'preview') renderPreview();
+}
+document.querySelectorAll('#mtabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
 
 // ===== 設定 =====
 function syncSettingsUI(){
@@ -865,7 +1143,9 @@ document.querySelectorAll('[data-s]').forEach(inp => {
     S.bleed = clamp(S.bleed, 0, 20); S.maxPerPage = clamp(Math.round(S.maxPerPage), 0, 20);
     S.gapX = clamp(S.gapX, 0, 30); S.gapY = clamp(S.gapY, 0, 30);
     S.line = clamp(S.line, 0.1, 5); S.fontMm = clamp(S.fontMm, 1, 20);
-    syncSettingsUI(); renderPreview(); save();
+    syncSettingsUI();
+    if(key === 'zoom') renderPreview(); else refreshAll();
+    renderExpInfo(); save();
   });
 });
 document.querySelectorAll('[data-e]').forEach(inp => {
@@ -880,17 +1160,17 @@ function canvasPx(){
 }
 function renderExpInfo(){
   const S = state.settings, {w, h} = canvasPx();
-  const per = state.exp.mode === 'layers' ? 2 : 1;
-  $('#expInfo').textContent = `出力サイズ：${w} × ${h} px（${S.trimW + 2 * S.bleed} × ${S.trimH + 2 * S.bleed} mm／${S.dpi} dpi）　全 ${lastPages.length} ページ → ${lastPages.length * per} ファイル`;
+  const txt = `全 ${lastPages.length} ページ／1ページの大きさ ${S.trimW + 2 * S.bleed}×${S.trimH + 2 * S.bleed}mm（${w}×${h}px・${S.dpi}dpi）`;
+  $('#expInfo').textContent = txt;
+  $('#setInfo').textContent = '書き出す画像：' + `${w}×${h}px（${S.dpi}dpi）`;
   $('[data-e="text"]').disabled = state.exp.mode !== 'combined';
 }
-function togglePanel(id){
-  const p = $(id), other = id === '#settings' ? '#exportPanel' : '#settings';
-  $(other).classList.add('hidden');
-  p.classList.toggle('hidden');
-}
-$('#btnSettings').addEventListener('click', () => togglePanel('#settings'));
-$('#btnExport').addEventListener('click', () => togglePanel('#exportPanel'));
+$('#btnSettings').addEventListener('click', () => { renderExpInfo(); $('#dlgSettings').showModal(); });
+$('#setClose').addEventListener('click', () => $('#dlgSettings').close());
+function openExport(){ renderExpInfo(); $('#dlgExport').showModal(); }
+$('#btnExport').addEventListener('click', openExport);
+$('#expClose').addEventListener('click', () => $('#dlgExport').close());
+$('#btnOpenSettings').addEventListener('click', () => { $('#dlgExport').close(); $('#btnSettings').click(); });
 
 // ===== PNG 書き出し =====
 // PNG に解像度情報（pHYs チャンク）を埋め込む
@@ -939,7 +1219,7 @@ function drawPageCanvas(pg, layer, forceWhite){
     ctx.strokeStyle = '#000'; ctx.lineWidth = m(S.line); ctx.lineJoin = 'miter';
     for(const r of pg.rects) ctx.strokeRect(m(ox + r.x), m(oy + r.y), m(r.w), m(r.h));
   }
-  // メモ文字
+  // メモ文字・コマ番号
   const drawText = layer === 'text' || (layer === 'all' && E.text);
   const drawNum = E.num && (layer !== 'frames' || E.mode === 'frames');
   const fs = m(S.fontMm), lh = fs * 1.4, pad = m(1.5);
@@ -1002,19 +1282,17 @@ async function canvasToFlate(cv, gray){
 // 全ページを1つのPDFにまとめる（1ページ＝1画像、用紙サイズは仕上がり＋裁ち落とし）
 async function buildPdf(pages, onProgress){
   const S = state.settings, mode = state.exp.mode;
-  const layer = mode === 'frames' ? 'frames' : 'all'; // 「別ファイル」設定でもPDFは枠線＋メモの1枚
+  const layer = mode === 'frames' ? 'frames' : 'all'; // 「別々の画像」設定でもPDFは枠線＋メモの1枚
   const gray = !state.exp.num; // コマ番号(青)が無ければグレースケールで軽量化
   const pt = mm => +(mm / 25.4 * 72).toFixed(3);
   const Wpt = pt(S.trimW + 2 * S.bleed), Hpt = pt(S.trimH + 2 * S.bleed);
   const enc = new TextEncoder(), parts = [], offsets = [];
   let off = 0;
+  const NL = '\n';
   const add = x => { const u = typeof x === 'string' ? enc.encode(x) : x; parts.push(u); off += u.length; };
-  const obj = (id, body) => { offsets[id] = off; add(`${id} 0 obj
-${body}
-endobj
-`); };
+  const obj = (id, body) => { offsets[id] = off; add(id + ' 0 obj' + NL + body + NL + 'endobj' + NL); };
   const N = pages.length;
-  add('%PDF-1.4\n%âãÏÓ\n');
+  add('%PDF-1.4' + NL + '%âãÏÓ' + NL);
   obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
   obj(2, `<< /Type /Pages /Kids [${pages.map((_, i) => `${3 + i * 3} 0 R`).join(' ')}] /Count ${N} >>`);
   for(let i = 0; i < N; i++){
@@ -1027,44 +1305,38 @@ endobj
     cv.width = cv.height = 0;
     obj(pid, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${Wpt} ${Hpt}] /Resources << /XObject << /Im0 ${iid} 0 R >> >> /Contents ${cid} 0 R >>`);
     const content = `q ${Wpt} 0 0 ${Hpt} 0 0 cm /Im0 Do Q`;
-    obj(cid, `<< /Length ${content.length} >>
-stream
-${content}
-endstream`);
+    obj(cid, `<< /Length ${content.length} >>` + NL + 'stream' + NL + content + NL + 'endstream');
     offsets[iid] = off;
-    add(`${iid} 0 obj
-<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /${gray ? 'DeviceGray' : 'DeviceRGB'} /BitsPerComponent 8 /Filter /FlateDecode /Length ${data.length} >>
-stream
-`);
+    add(iid + ' 0 obj' + NL + `<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /${gray ? 'DeviceGray' : 'DeviceRGB'} /BitsPerComponent 8 /Filter /FlateDecode /Length ${data.length} >>` + NL + 'stream' + NL);
     add(data);
-    add('\nendstream\nendobj\n');
+    add(NL + 'endstream' + NL + 'endobj' + NL);
   }
   const size = 3 + N * 3, xref = off;
-  let x = `xref
-0 ${size}
-0000000000 65535 f 
-`;
-  for(let id = 1; id < size; id++) x += String(offsets[id]).padStart(10, '0') + ' 00000 n \n';
-  add(x + `trailer
-<< /Size ${size} /Root 1 0 R >>
-startxref
-${xref}
-%%EOF
-`);
+  let x = 'xref' + NL + `0 ${size}` + NL + '0000000000 65535 f ' + NL;
+  for(let id = 1; id < size; id++) x += String(offsets[id]).padStart(10, '0') + ' 00000 n ' + NL;
+  add(x + 'trailer' + NL + `<< /Size ${size} /Root 1 0 R >>` + NL + 'startxref' + NL + xref + NL + '%%EOF' + NL);
   return new Blob(parts, {type:'application/pdf'});
 }
 function dateStamp(){
   const d = new Date();
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
 }
+function download(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function markExported(){ saveUI({exported:true}); updateGuide(); }
 async function exportPdf(){
   if(typeof CompressionStream === 'undefined'){ alert('このブラウザはPDF書き出しに対応していません。最新の Chrome / Edge / Safari をお使いください。'); return; }
-  renderPreview();
+  $('#dlgExport').close();
   const dlg = $('#progress'), txt = $('#progText');
   dlg.showModal();
   try{
-    const blob = await buildPdf(lastPages, (i, n) => { txt.textContent = `PDF作成中… ${i + 1} / ${n}`; });
+    const blob = await buildPdf(lastPages, (i, n) => { txt.textContent = `PDFを作成中… ${i + 1} / ${n} ページ`; });
     download(blob, `komawari_${dateStamp()}.pdf`);
+    markExported(); toast('PDFを保存しました。クリスタEXの「ストーリー → ページの取り込み」で開いてください', false);
   }catch(err){
     alert('PDFの作成に失敗しました：' + err.message);
   }finally{
@@ -1081,23 +1353,16 @@ function fileJobs(pages){
   }
   return jobs;
 }
-function download(blob, name){
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = name;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-}
 async function exportPages(pages, asZip){
-  renderPreview();
-  if(pages !== lastPages) pages = pages.map(pg => lastPages[pg.index]).filter(Boolean);
+  $('#dlgExport').close();
   const jobs = fileJobs(pages);
   const dlg = $('#progress'), txt = $('#progText');
   dlg.showModal();
   try{
-    if(asZip && !window.JSZip){ alert('ZIPライブラリを読み込めませんでした（オフライン？）。1枚ずつ保存します。'); asZip = false; }
+    if(asZip && !window.JSZip){ alert('ZIPの機能を読み込めませんでした（オフライン？）。1枚ずつ保存します。'); asZip = false; }
     const zip = asZip ? new JSZip() : null;
     for(let i = 0; i < jobs.length; i++){
-      txt.textContent = `書き出し中… ${i + 1} / ${jobs.length}`;
+      txt.textContent = `画像を作成中… ${i + 1} / ${jobs.length}`;
       await new Promise(r => setTimeout(r, 30)); // 表示更新のため
       const blob = await renderPageBlob(jobs[i].pg, jobs[i].layer);
       if(zip) zip.file(jobs[i].name, blob);
@@ -1107,53 +1372,72 @@ async function exportPages(pages, asZip){
       txt.textContent = 'ZIPにまとめています…';
       download(await zip.generateAsync({type:'blob'}), `komawari_${dateStamp()}.zip`);
     }
+    markExported(); toast('保存しました', false);
   }catch(err){
     alert('書き出しに失敗しました：' + err.message);
   }finally{
     dlg.close();
   }
 }
+$('#btnPdf').addEventListener('click', exportPdf);
 $('#btnZip').addEventListener('click', () => exportPages(lastPages, true));
 $('#btnEach').addEventListener('click', () => exportPages(lastPages, false));
-$('#btnPdf').addEventListener('click', exportPdf);
 
-// ===== ヘッダーの操作 =====
-$('#btnBulk').addEventListener('click', () => { $('#bulkText').value = serialize(state.rows); $('#dlgBulk').showModal(); });
+// ===== ファイルメニュー =====
+const closeMenu = () => $('#fileMenu').removeAttribute('open');
+document.addEventListener('click', e => { if(!e.target.closest('#fileMenu')) closeMenu(); });
+$('#btnNew').addEventListener('click', () => {
+  closeMenu(); pushHistory();
+  state.rows = [{id:uid(), type:'item', text:'', indent:0}]; state.sizes = {}; state.variants = {};
+  selKey = null; commit(state.rows[0].id, 0);
+  setTab('memo'); toast('新しく始めました');
+});
+$('#btnBulk').addEventListener('click', () => { closeMenu(); $('#bulkText').value = serialize(state.rows); $('#dlgBulk').showModal(); });
 $('#bulkCancel').addEventListener('click', () => $('#dlgBulk').close());
 $('#bulkApply').addEventListener('click', () => {
+  pushHistory();
   const rows = parseText($('#bulkText').value, $('#bulkBlank').checked);
-  // 既存の区切りIDを順番に引き継ぎ、コマサイズ設定をなるべく保つ
+  // 既存の区切りIDを順番に引き継ぎ、コマの大きさ設定をなるべく保つ
   const oldBreaks = state.rows.filter(r => r.type !== 'item').map(r => r.id);
   let bi = 0;
   rows.forEach(r => { if(r.type !== 'item' && bi < oldBreaks.length) r.id = oldBreaks[bi++]; });
   state.rows = rows.length ? rows : [{id:uid(), type:'item', text:'', indent:0}];
-  $('#dlgBulk').close(); commit();
+  $('#dlgBulk').close(); commit(); toast('テキストを取り込みました');
 });
 $('#btnSave').addEventListener('click', () => {
-  download(new Blob([JSON.stringify({app:'komawari-memo', version:1, ...state}, null, 1)], {type:'application/json'}), 'komawari_memo.json');
+  closeMenu();
+  download(new Blob([JSON.stringify({app:'komawari-memo', version:1, ...state}, null, 1)], {type:'application/json'}), `komawari_memo_${dateStamp()}.json`);
 });
-$('#btnLoad').addEventListener('click', () => $('#fileLoad').click());
+$('#btnLoad').addEventListener('click', () => { closeMenu(); $('#fileLoad').click(); });
 $('#fileLoad').addEventListener('change', async e => {
   const f = e.target.files[0]; e.target.value = '';
   if(!f) return;
   try{
-    state = normalize(JSON.parse(await f.text()));
-    selKey = null; syncSettingsUI(); commit();
-  }catch(err){ alert('読み込めませんでした：' + err.message); }
+    const st = normalize(JSON.parse(await f.text()));
+    pushHistory();
+    state = st; selKey = null; syncSettingsUI(); commit(); toast('作業ファイルを開きました');
+  }catch(err){ alert('このファイルは読み込めませんでした：' + err.message); }
 });
-$('#btnNew').addEventListener('click', () => {
-  if(!confirm('現在のメモを消して新規作成します。よろしいですか？（設定はそのまま）')) return;
-  const keep = {settings:state.settings, exp:state.exp};
-  state = {...defaultState(false), ...keep};
-  selKey = null; commit(state.rows[0].id, 0);
-});
+
+// ===== 使い方・初回案内 =====
 $('#btnHelp').addEventListener('click', () => $('#dlgHelp').showModal());
 $('#helpClose').addEventListener('click', () => $('#dlgHelp').close());
+$('#helpWelcome').addEventListener('click', () => { $('#dlgHelp').close(); $('#guide').classList.remove('hidden'); saveUI({guideHidden:false}); $('#dlgWelcome').showModal(); });
+$('#welcomeOk').addEventListener('click', () => { saveUI({welcomed:true}); $('#dlgWelcome').close(); });
+$('#welcomeEmpty').addEventListener('click', () => {
+  saveUI({welcomed:true}); $('#dlgWelcome').close();
+  if(state.rows.some(r => r.type === 'item' && r.text)) $('#btnNew').click();
+});
 
 // ===== 起動 =====
+if(loadUI().guideHidden) $('#guide').classList.add('hidden');
 syncSettingsUI();
+lastPages = buildPages();
 renderEditor();
 renderPreview();
+updateGuide();
+renderExpInfo();
+if(firstVisit) $('#dlgWelcome').showModal();
 let resizeTimer = null;
 window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderPreview, 200); });
 </script>
