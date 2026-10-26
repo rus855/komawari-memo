@@ -208,10 +208,11 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
   <details class="menu" id="fileMenu">
     <summary>ファイル ▾</summary>
     <div class="items">
-      <button id="btnNew"><span>新しく始める</span><small>メモを空にします（元に戻すで復元できます）</small></button>
+      <button id="btnNew"><span>新しく始める</span><small>メモを空にします（今の内容は予備として自動で残ります）</small></button>
       <button id="btnBulk"><span>テキストでまとめて入力</span><small>他のメモアプリの文章を貼り付けて取り込み</small></button>
       <button id="btnSave"><span>作業ファイルを保存 (.json)</span><small>別のパソコン・スマホへ移すときに</small></button>
       <button id="btnLoad"><span>作業ファイルを開く</span><small>保存した .json を読み込み</small></button>
+      <button id="btnRestore"><span>直前のデータを復元</span><small id="restoreInfo">「新しく始める」などで置き換える前の内容に戻します</small></button>
     </div>
   </details>
   <input type="file" id="fileLoad" accept=".json,application/json" hidden>
@@ -263,7 +264,7 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
     <div class="wstep"><div class="no">3</div><b>大きさを調整</b><small>右のコマをクリックして「小〜大」を選ぶだけ。ページ全体が自動できれいに割り直されます。</small></div>
     <div class="wstep"><div class="no">4</div><b>書き出す</b><small>右上の「⬇ 書き出す」から。クリスタEXなら PDF で全ページを一括で取り込めます。</small></div>
   </div>
-  <p class="info" style="margin-top:12px">最初はサンプルが入っています。自由に触ってみてください（間違えても「↶ 元に戻す」で戻せます）。</p>
+  <p class="info" style="margin-top:12px" id="welcomeNote">最初はサンプルが入っています。自由に触ってみてください（間違えても「↶ 元に戻す」で戻せます）。</p>
   <div class="acts">
     <button id="welcomeEmpty">空の状態から始める</button>
     <button class="primary" id="welcomeOk">サンプルで試してみる</button>
@@ -1383,11 +1384,41 @@ $('#btnPdf').addEventListener('click', exportPdf);
 $('#btnZip').addEventListener('click', () => exportPages(lastPages, true));
 $('#btnEach').addEventListener('click', () => exportPages(lastPages, false));
 
+// ===== 予備保存（内容を丸ごと置き換える前に自動で残す） =====
+const BACKUP_KEY = 'komawari-memo-backup';
+const hasContent = () => state.rows.some(r => r.type === 'item' && r.text.trim());
+const isSample = () => serialize(state.rows) === serialize(parseText(SAMPLE, false));
+function backupNow(reason){
+  if(!hasContent() || isSample()) return; // 空・サンプルのままなら残さない
+  try{ localStorage.setItem(BACKUP_KEY, JSON.stringify({at:Date.now(), reason, state})); }catch(e){}
+}
+function readBackup(){ try{ return JSON.parse(localStorage.getItem(BACKUP_KEY)); }catch(e){ return null; } }
+function updateRestoreInfo(){
+  const b = readBackup();
+  $('#btnRestore').disabled = !b;
+  $('#restoreInfo').textContent = b
+    ? `${new Date(b.at).toLocaleString('ja-JP', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'})}「${b.reason}」の前の内容に戻します`
+    : '予備保存はまだありません';
+}
+$('#fileMenu').addEventListener('toggle', updateRestoreInfo);
+$('#btnRestore').addEventListener('click', () => {
+  closeMenu();
+  const b = readBackup(); if(!b) return;
+  if(hasContent() && !isSample() && !confirm('今のメモを、予備保存の内容に置き換えます。\n（今のメモも予備として残すので、もう一度「直前のデータを復元」を押せば戻れます）\nよろしいですか？')) return;
+  const cur = hasContent() && !isSample() ? {at:Date.now(), reason:'復元', state:JSON.parse(JSON.stringify(state))} : null;
+  pushHistory();
+  state = normalize(b.state); selKey = null; syncSettingsUI(); commit();
+  try{ if(cur) localStorage.setItem(BACKUP_KEY, JSON.stringify(cur)); }catch(e){}
+  setTab('memo'); toast('予備保存の内容に戻しました');
+});
+
 // ===== ファイルメニュー =====
 const closeMenu = () => $('#fileMenu').removeAttribute('open');
 document.addEventListener('click', e => { if(!e.target.closest('#fileMenu')) closeMenu(); });
 $('#btnNew').addEventListener('click', () => {
-  closeMenu(); pushHistory();
+  closeMenu();
+  if(hasContent() && !isSample() && !confirm('今のメモを消して、新しく始めます。\n今の内容は予備として自動で残るので、あとから「ファイル → 直前のデータを復元」で戻せます。\nよろしいですか？')) return;
+  backupNow('新しく始める'); pushHistory();
   state.rows = [{id:uid(), type:'item', text:'', indent:0}]; state.sizes = {}; state.variants = {};
   selKey = null; commit(state.rows[0].id, 0);
   setTab('memo'); toast('新しく始めました');
@@ -1395,7 +1426,7 @@ $('#btnNew').addEventListener('click', () => {
 $('#btnBulk').addEventListener('click', () => { closeMenu(); $('#bulkText').value = serialize(state.rows); $('#dlgBulk').showModal(); });
 $('#bulkCancel').addEventListener('click', () => $('#dlgBulk').close());
 $('#bulkApply').addEventListener('click', () => {
-  pushHistory();
+  backupNow('テキストでまとめて入力'); pushHistory();
   const rows = parseText($('#bulkText').value, $('#bulkBlank').checked);
   // 既存の区切りIDを順番に引き継ぎ、コマの大きさ設定をなるべく保つ
   const oldBreaks = state.rows.filter(r => r.type !== 'item').map(r => r.id);
@@ -1414,7 +1445,7 @@ $('#fileLoad').addEventListener('change', async e => {
   if(!f) return;
   try{
     const st = normalize(JSON.parse(await f.text()));
-    pushHistory();
+    backupNow('作業ファイルを開く'); pushHistory();
     state = st; selKey = null; syncSettingsUI(); commit(); toast('作業ファイルを開きました');
   }catch(err){ alert('このファイルは読み込めませんでした：' + err.message); }
 });
@@ -1422,11 +1453,20 @@ $('#fileLoad').addEventListener('change', async e => {
 // ===== 使い方・初回案内 =====
 $('#btnHelp').addEventListener('click', () => $('#dlgHelp').showModal());
 $('#helpClose').addEventListener('click', () => $('#dlgHelp').close());
-$('#helpWelcome').addEventListener('click', () => { $('#dlgHelp').close(); $('#guide').classList.remove('hidden'); saveUI({guideHidden:false}); $('#dlgWelcome').showModal(); });
+function openWelcome(){
+  const sample = isSample();
+  $('#welcomeEmpty').style.display = sample ? '' : 'none';
+  $('#welcomeOk').textContent = sample ? 'サンプルで試してみる' : '閉じる';
+  $('#welcomeNote').style.display = sample ? '' : 'none';
+  $('#dlgWelcome').showModal();
+}
+$('#helpWelcome').addEventListener('click', () => { $('#dlgHelp').close(); $('#guide').classList.remove('hidden'); saveUI({guideHidden:false}); openWelcome(); });
 $('#welcomeOk').addEventListener('click', () => { saveUI({welcomed:true}); $('#dlgWelcome').close(); });
 $('#welcomeEmpty').addEventListener('click', () => {
   saveUI({welcomed:true}); $('#dlgWelcome').close();
-  if(state.rows.some(r => r.type === 'item' && r.text)) $('#btnNew').click();
+  if(!isSample()) return; // 念のため：サンプル以外は絶対に消さない
+  state.rows = [{id:uid(), type:'item', text:'', indent:0}]; state.sizes = {}; state.variants = {};
+  selKey = null; commit(state.rows[0].id, 0); setTab('memo');
 });
 
 // ===== 起動 =====
@@ -1437,7 +1477,7 @@ renderEditor();
 renderPreview();
 updateGuide();
 renderExpInfo();
-if(firstVisit) $('#dlgWelcome').showModal();
+if(firstVisit) openWelcome();
 let resizeTimer = null;
 window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderPreview, 200); });
 </script>
