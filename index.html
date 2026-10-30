@@ -374,9 +374,9 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
 <dialog id="dlgAuto">
   <h2>✓ 自動で保存されています</h2>
   <p class="lead">入力した内容は、この端末のブラウザに自動で保存されています。保存の操作は必要ありません。閉じたファイルは「📂 ファイル一覧」から開けます。</p>
-  <p class="info">別の端末で使うときや、バックアップを取りたいときだけ、ファイルに書き出してください。</p>
+  <p class="info">別の端末で使うときや、バックアップを取りたいときは「名前を付けて保存」でファイルにできます。</p>
   <div class="acts">
-    <button id="autoExport">ファイルに書き出す (.json)</button>
+    <button id="autoExport">名前を付けて保存</button>
     <button class="primary" id="autoClose">閉じる</button>
   </div>
 </dialog>
@@ -536,7 +536,7 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
       <li><b>複数ファイル</b>：上のタブがファイルです。「＋」で新しいファイル、タブのクリックで切り替え、ダブルクリックで名前を変更できます。</li>
       <li><b>閉じる</b>：タブの × で閉じても消えません。「📂 ファイル一覧」からいつでも開き直せます。不要になったら一覧の「削除」で消せます。</li>
       <li><b>上書き保存</b>：<kbd>Ctrl</kbd>+<kbd>S</kbd> または「💾 保存」。最初に名前と保存先を決めると、次からは同じファイルに上書きします（パソコンの Chrome / Edge）。</li>
-      <li><b>スマホ・Safari・Firefox</b>：自動で保存されるので、保存の操作は要りません。別の端末で使うときだけ「ファイル → ファイルに書き出す」を使います。確認が出たら「ダウンロード」を押してください。</li>
+      <li><b>スマホ・Safari・Firefox</b>：自動で保存されるので、保存の操作は要りません。ファイルとして残したいときは「ファイル → 名前を付けて保存」を使います。確認が出たら「ダウンロード」を押してください。</li>
       <li><b>自動保存</b>：入力内容は常にこのブラウザの中に自動保存されます。ただし端末どうしでは同期されず、ブラウザのデータを消すと失われます。別の端末に移すときや大事な節目には、ファイルとして保存してください。</li>
       <li><b>ファイルを開く</b>：パソコンでは今のファイルと同じフォルダから始まり、.json だけが表示されます。保存した .json は画面にドラッグ＆ドロップしても開けます。スマホでは、まずファイル一覧から選びます。別の端末から持ってきたファイルだけ「端末のファイルを開く」で探します。</li>
     </ul>
@@ -954,8 +954,8 @@ async function saveFile(asNew){
   flushSave();
   saving = true;
   try{
-    // 保存画面がないブラウザでは、最初の書き出しのときだけ名前を聞く
-    if(!hasFS && d.savedHash == null){
+    // 保存画面がないブラウザでは、「名前を付けて保存」のたびに名前を聞く
+    if(!hasFS && (asNew || d.savedHash == null)){
       const name = await askName(d.title);
       if(name == null) return;
       d.title = name.slice(0, 60); writeIndex(); renderTabs();
@@ -1075,9 +1075,9 @@ document.addEventListener('drop', async e => {
   if(list.length) openFiles(list);
 });
 $('#btnSave').addEventListener('click', () => { if(hasFS) saveFile(false); else $('#dlgAuto').showModal(); });
-$('#btnSaveAs').addEventListener('click', () => { closeMenu(); saveFile(hasFS); });
+$('#btnSaveAs').addEventListener('click', () => { closeMenu(); saveFile(true); });
 $('#autoClose').addEventListener('click', () => $('#dlgAuto').close());
-$('#autoExport').addEventListener('click', () => { $('#dlgAuto').close(); saveFile(false); });
+$('#autoExport').addEventListener('click', () => { $('#dlgAuto').close(); saveFile(true); });
 
 // ファイル一覧
 function renderFiles(){
@@ -2447,8 +2447,7 @@ if(loadUI().guideHidden) $('#guide').classList.add('hidden');
 if(!hasFS){
   // 上書き保存できないブラウザ向けに表記を変える
   const sa = $('#btnSaveAs');
-  sa.querySelector('span').textContent = 'ファイルに書き出す (.json)';
-  sa.querySelector('small').textContent = '別の端末で使うときやバックアップ用';
+  sa.querySelector('small').textContent = '.json ファイルとしてダウンロードします（別の端末用・バックアップ用）';
   $('#btnLoad').querySelector('small').textContent = 'この端末のファイル一覧から開きます';
   $('#filesHint').hidden = false;
 }
