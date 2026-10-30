@@ -45,6 +45,7 @@ header{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(-
 .logo{font-size:17px;font-weight:700;margin-right:8px;display:flex;align-items:center;gap:8px}
 .logo svg{flex:none}
 .hspace{flex:1}
+.only-sm{display:none}
 .menu{position:relative}
 .menu > summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:6px 12px;background:var(--surface)}
 .menu > summary::-webkit-details-marker{display:none}
@@ -107,10 +108,19 @@ main{flex:1;display:grid;grid-template-columns:minmax(330px,460px) minmax(0,1fr)
 .cno{font-weight:700;font-size:13px;color:var(--accent-text);margin-right:2px}
 .handle{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;color:var(--muted);font-size:16px;line-height:1;padding:4px 5px;margin-left:-6px;border-radius:6px}
 .handle:hover{background:var(--accent-weak);color:var(--accent-text)}
-.cdel{margin-left:auto;font-size:12px;padding:2px 8px;border-color:transparent;background:transparent;color:var(--muted)}
+.cdel{margin-left:auto;font-size:12px;padding:3px 9px;border-color:var(--line);color:var(--page)}
 .cdel:hover:not(:disabled){color:var(--page)!important;border-color:var(--page)}
 .chip.mv{padding:3px 8px}
 button.paste{border-color:var(--ok);color:var(--ok)}
+.row{position:relative}
+.row .cut{position:relative;z-index:2}
+.tcover{display:none;position:absolute;inset:0}
+.card.pressing,.pn.pressing{box-shadow:0 0 0 3px var(--accent);transform:scale(.985);transition:transform .25s,box-shadow .25s}
+.pdel{position:absolute;right:3px;bottom:3px;width:24px;height:24px;padding:0;border-radius:50%;font-size:11px;line-height:22px;background:rgba(255,255,255,.92);border:1px solid #d5b3ae;color:#c8402f;z-index:1}
+.pdel:hover:not(:disabled){background:#fbe9e6;color:#c8402f;border-color:#c8402f}
+.pn .sizes{z-index:2}
+#btnUndo:not(:disabled){color:var(--accent-text);font-weight:600;background:var(--accent-weak)}
+#nameInput{width:100%;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);color:var(--text)}
 .card.dragging{opacity:.35}
 .dropline{height:0;position:relative;pointer-events:none}
 .dropline::after{content:"";position:absolute;left:0;right:0;top:-6px;height:4px;border-radius:2px;background:var(--accent);box-shadow:0 0 0 2px var(--surface)}
@@ -127,7 +137,7 @@ button.paste{border-color:var(--ok);color:var(--ok)}
 .row{display:flex;align-items:flex-start;gap:2px;padding-left:calc(var(--ind,0) * 20px);border-radius:6px}
 .row:hover{background:var(--surface2)}
 .row .bullet{flex:none;width:18px;padding-top:5px;text-align:center;color:var(--muted)}
-.row textarea{flex:1;border:none;background:transparent;resize:none;padding:5px 2px;line-height:1.5;outline:none;overflow:hidden;min-width:0}
+.row textarea{field-sizing:content;flex:1;border:none;background:transparent;resize:none;padding:5px 2px;line-height:1.5;outline:none;overflow:hidden;min-width:0}
 .row textarea::placeholder{color:var(--muted);opacity:.7}
 .row .cut{flex:none;font-size:12px;padding:2px 8px;margin-top:3px;border-radius:999px;opacity:0;color:var(--accent-text);border-color:var(--accent-weak);background:var(--accent-weak)}
 .row:hover .cut,.row:focus-within .cut{opacity:1}
@@ -217,11 +227,17 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
 /* トースト */
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#2a2a2e;color:#fff;border-radius:10px;padding:10px 12px 10px 16px;display:flex;gap:12px;align-items:center;opacity:0;pointer-events:none;transition:.2s;z-index:100;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:calc(100vw - 32px)}
 #toast.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
-#toast button{background:transparent;color:#9dc0ff;border-color:#555;padding:3px 10px}
+#toast button{background:#2f6fdf;color:#fff;border-color:#2f6fdf;padding:6px 12px;font-weight:600;flex:none}
 
 /* スマホ用タブ */
 #mtabs{display:none}
 @media (hover:none){
+  /* 長押しで文字選択が始まらないようにする。入力中の欄だけ選択できる */
+  body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  textarea,input{-webkit-user-select:text;user-select:text}
+  .tcover{display:block}
+  .row:focus-within .tcover{display:none}
+  .pdel{width:30px;height:30px;line-height:28px;font-size:13px}
   .row .cut{opacity:.85}
   .row textarea,.ftab input{font-size:16px} /* iOSの自動拡大を防ぐ */
   .pn .phov{display:none!important}
@@ -229,18 +245,27 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
 @media (max-width:860px){
   main{grid-template-columns:minmax(0,1fr)}
   #left{border-right:none;min-width:0}
-  #left .bar .sub{display:none}
   .row .cut{padding:2px 6px}
   body.tab-memo #right, body.tab-preview #left{display:none}
   #mtabs{display:flex;flex:none;border-top:1px solid var(--line);background:var(--surface)}
   #mtabs button{flex:1;border:none;border-radius:0;padding:12px;font-weight:600;background:transparent}
   #mtabs button.on{color:var(--accent-text);box-shadow:inset 0 3px 0 var(--accent)}
-  header{padding:8px 12px}
-  .logo span{display:none}
+  /* スマホでは上部を1段にまとめ、メモを広く見せる */
+  header{padding:6px 8px;gap:4px;flex-wrap:nowrap}
+  header button,.menu > summary{padding:6px 8px}
+  .logo{display:none}
+  .only-sm{display:inline}
+  #guide{display:none}
+  #left .bar{padding:3px 12px}
+  #left .bar h2{display:none}
+  #left .bar .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #tabs{padding:4px 8px 0}
+  .tabbtn{padding:4px 6px}
   .step small{display:none}
   .step{flex:none}
   .step .arrow{display:none}
   #saveStatus{display:none}
+  #toast{bottom:64px}
   .ftab{max-width:150px}
   #pages{padding:12px}
   .hide-sm{display:none}
@@ -253,8 +278,8 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
     <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1.5" y="1.5" width="23" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="5" width="16" height="6" fill="#2f6fdf"/><rect x="5" y="13" width="7" height="8" fill="#2f6fdf" opacity=".55"/><rect x="14" y="13" width="7" height="8" fill="#2f6fdf" opacity=".3"/></svg>
     <span>コマ割りメモ</span>
   </div>
-  <button class="ghost" id="btnUndo" title="元に戻す (Ctrl+Z)" disabled>↶ 元に戻す</button>
-  <button class="ghost hide-sm" id="btnRedo" title="やり直す (Ctrl+Y)" disabled>↷ やり直す</button>
+  <button class="ghost" id="btnUndo" title="元に戻す (Ctrl+Z)" disabled><span class="hide-sm">↶ 元に戻す</span><span class="only-sm">↶ 戻す</span></button>
+  <button class="ghost" id="btnRedo" title="やり直す (Ctrl+Y)" disabled>↷<span class="hide-sm"> やり直す</span></button>
   <div class="hspace"></div>
   <button id="btnSave" title="上書き保存 (Ctrl+S)">💾 保存</button>
   <details class="menu" id="fileMenu">
@@ -270,9 +295,9 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
     </div>
   </details>
   <input type="file" id="fileLoad" accept=".json,application/json" multiple hidden>
-  <button id="btnSettings" title="用紙サイズ・解像度・読む方向など">⚙ 用紙設定</button>
+  <button id="btnSettings" title="用紙サイズ・解像度・読む方向など" aria-label="用紙設定">⚙<span class="hide-sm"> 用紙設定</span></button>
   <button id="btnHelp" title="使い方">？</button>
-  <button class="primary" id="btnExport">⬇ 書き出す</button>
+  <button class="primary" id="btnExport" aria-label="書き出す">⬇<span class="hide-sm"> 書き出す</span></button>
 </header>
 
 <!-- ファイルタブ -->
@@ -296,7 +321,7 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
   <section id="left">
     <div class="bar">
       <h2>✏ メモ</h2>
-      <span class="sub">1枚のカード＝1コマ。クリックすると操作ボタンが出ます</span>
+      <span class="sub" id="memoSub">1枚のカード＝1コマ。クリックすると操作ボタンが出ます</span>
     </div>
     <div id="editor"></div>
   </section>
@@ -330,6 +355,17 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
   <div class="acts">
     <button id="welcomeEmpty">空の状態から始める</button>
     <button class="primary" id="welcomeOk">サンプルで試してみる</button>
+  </div>
+</dialog>
+
+<!-- 名前を付けて保存（保存画面がないブラウザ用） -->
+<dialog id="dlgName">
+  <h2>名前を付けて保存</h2>
+  <p class="lead">ファイルの名前を入力してください。</p>
+  <input type="text" id="nameInput" maxlength="60" autocomplete="off" aria-label="ファイル名">
+  <div class="acts">
+    <button id="nameCancel">キャンセル</button>
+    <button class="primary" id="nameOk">保存</button>
   </div>
 </dialog>
 
@@ -470,9 +506,10 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
     </ul>
     <h3>コマの入れ替え・削除</h3>
     <ul>
-      <li><b>入れ替え</b>：右のコマを別のコマへドラッグすると、中身が入れ替わります（コマの形はそのまま・別のページへも可）。スマホは長押ししてからドラッグします。</li>
-      <li><b>並べ替え</b>：左のカードの <b>⠿</b> をドラッグすると好きな位置へ移動できます（大きさもカードと一緒に移動）。カードを選ぶと出る ▲▼ でも1つずつ動かせます。</li>
-      <li><b>削除</b>：カードを選んで「🗑 削除」、またはコマを選んで <kbd>Delete</kbd> キー。間違えても「元に戻す」で戻せます。</li>
+      <li><b>入れ替え</b>：右のコマを別のコマへドラッグすると、中身が入れ替わります（コマの形はそのまま・別のページへも可）。スマホは長押しして、枠が青く光ったら指を動かします。</li>
+      <li><b>並べ替え</b>：左のカードの <b>⠿</b> をドラッグすると好きな位置へ移動できます（大きさもカードと一緒に移動）。スマホはカードのどこを長押ししても動かせます（入力中の行を除く）。カードを選ぶと出る ▲▼ でも1つずつ動かせます。</li>
+      <li><b>削除</b>：カードの「🗑 削除」か、右のコマの右下の 🗑。コマを選んで <kbd>Delete</kbd> キーでも消せます。</li>
+      <li><b>元に戻す</b>：間違えたら画面左上の「↶ 元に戻す」（<kbd>Ctrl</kbd>+<kbd>Z</kbd>）。ページを開き直したあとでも戻せます。</li>
       <li><b>別のファイルへ移す</b>：カードを選んで「⧉ コピー」か「✂ 切り取り」を押し、タブを切り替えて、貼りたい場所のカードの「📋 貼り付け」または下の「📋 最後に貼り付け」。コマを選んだ状態なら <kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd> も使えます。大きさも一緒に移ります。</li>
     </ul>
     <h3>4. 書き出してクリスタへ</h3>
@@ -485,7 +522,7 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
     <ul>
       <li><b>複数ファイル</b>：上のタブがファイルです。「＋」で新しいファイル、タブのクリックで切り替え、ダブルクリックで名前を変更できます。</li>
       <li><b>閉じる</b>：タブの × で閉じても消えません。「📂 ファイル一覧」からいつでも開き直せます。不要になったら一覧の「削除」で消せます。</li>
-      <li><b>上書き保存</b>：<kbd>Ctrl</kbd>+<kbd>S</kbd> または「💾 保存」。最初に保存先を選ぶと、次からは同じファイルに上書きします（Chrome / Edge）。Safari・Firefox・スマホでは上書きができないため、毎回新しいファイルとしてダウンロードされます。</li>
+      <li><b>上書き保存</b>：<kbd>Ctrl</kbd>+<kbd>S</kbd> または「💾 保存」。最初に名前と保存先を決めると、次からは同じファイルに上書きします（Chrome / Edge）。Safari・Firefox・スマホでは、最初に名前を入力します。上書きはできないため、保存のたびに新しいファイルとしてダウンロードされます。</li>
       <li><b>自動保存</b>：入力内容は常にこのブラウザの中に自動保存されます。ただし端末どうしでは同期されず、ブラウザのデータを消すと失われます。別の端末に移すときや大事な節目には、ファイルとして保存してください。</li>
       <li>保存した .json は、画面にドラッグ＆ドロップしても開けます。</li>
     </ul>
@@ -495,7 +532,7 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
 
 <dialog id="progress"><div id="progText">書き出し中…</div></dialog>
 <div id="ghost" hidden></div>
-<div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">元に戻す</button></div>
+<div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">↶ 元に戻す</button></div>
 
 <script>
 'use strict';
@@ -686,7 +723,7 @@ function createDoc(data, title, extra){
 }
 function removeDoc(id){
   docs.delete(id); deletedIds.add(id);
-  lsDel(DOC_PREFIX + id); idbDel(id); writeIndex();
+  lsDel(DOC_PREFIX + id); idbDel(id); idbSet('hist', id, undefined); writeIndex();
 }
 function activateDoc(id){
   const d = docs.get(id); if(!d) return false;
@@ -699,6 +736,7 @@ function activateDoc(id){
   syncSettingsUI(); refreshAll();
   editorEl.scrollTop = d.scroll || 0;
   updateUndoButtons(); renderTabs(); updateSaveUI(); renderExpInfo(); writeIndex();
+  loadHist(d);
   return true;
 }
 function newFile(){
@@ -822,21 +860,25 @@ window.addEventListener('pagehide', flushSave);
 // ファイルの保存先（上書き保存用）を IndexedDB に記憶する
 function idbOpen(){
   return new Promise((res, rej) => {
-    const q = indexedDB.open('komawari-memo', 1);
-    q.onupgradeneeded = () => q.result.createObjectStore('handles');
+    const q = indexedDB.open('komawari-memo', 2);
+    q.onupgradeneeded = () => {
+      for(const n of ['handles', 'hist']) if(!q.result.objectStoreNames.contains(n)) q.result.createObjectStore(n);
+    };
     q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
   });
 }
-async function idbDo(mode, fn){
+async function idbDo(mode, fn, store = 'handles'){
   const db = await idbOpen();
   return new Promise((res, rej) => {
-    const tx = db.transaction('handles', mode), q = fn(tx.objectStore('handles'));
+    const tx = db.transaction(store, mode), q = fn(tx.objectStore(store));
     tx.oncomplete = () => { db.close(); res(q.result); };
     tx.onerror = tx.onabort = () => { db.close(); rej(tx.error); };
   });
 }
 async function idbPut(id, h){ try{ await idbDo('readwrite', s => s.put(h, id)); }catch(e){} }
 async function idbDel(id){ try{ await idbDo('readwrite', s => s.delete(id)); }catch(e){} }
+async function idbSet(store, id, v){ try{ await idbDo('readwrite', s => v === undefined ? s.delete(id) : s.put(v, id), store); }catch(e){} }
+async function idbGet(store, id){ try{ return await idbDo('readonly', s => s.get(id), store); }catch(e){ return null; } }
 async function idbLoadHandles(){
   try{
     const keys = await idbDo('readonly', s => s.getAllKeys());
@@ -865,6 +907,23 @@ function updateSaveUI(){
     : d.savedHash != null ? `✓ 保存済み（${d.fileName}）` : 'ブラウザに自動保存中';
   st.title = d.savedHash == null ? '入力内容はこのブラウザに自動で残ります。ファイルにも残すなら「💾 保存」を押してください' : '';
 }
+// 名前の入力画面。キャンセルなら null を返す
+function askName(def){
+  const dlg = $('#dlgName'), inp = $('#nameInput');
+  inp.value = def;
+  return new Promise(res => {
+    const done = v => {
+      $('#nameOk').onclick = $('#nameCancel').onclick = inp.onkeydown = dlg.oncancel = null;
+      dlg.close(); res(v);
+    };
+    const ok = () => { const v = inp.value.trim(); if(v) done(v); else inp.focus(); };
+    $('#nameOk').onclick = ok;
+    $('#nameCancel').onclick = () => done(null);
+    dlg.oncancel = e => { e.preventDefault(); done(null); };
+    inp.onkeydown = e => { if(e.key === 'Enter' && !e.isComposing && e.keyCode !== 229){ e.preventDefault(); ok(); } };
+    dlg.showModal(); inp.focus(); inp.select();
+  });
+}
 let saving = false;
 async function saveFile(asNew){
   if(saving) return;
@@ -872,6 +931,12 @@ async function saveFile(asNew){
   flushSave();
   saving = true;
   try{
+    // 保存画面がないブラウザでは、初回と「名前を付けて保存」のときに名前を聞く
+    if(!hasFS && (asNew || d.savedHash == null)){
+      const name = await askName(d.title);
+      if(name == null) return;
+      d.title = name.slice(0, 60); writeIndex(); renderTabs();
+    }
     const hash = docHash(d.data);
     if(!hasFS){
       const name = safeName(d.title) + '.json';
@@ -1031,7 +1096,7 @@ function pushHistory(){
   if(hist.undo.length > 150) hist.undo.shift();
   hist.redo.length = 0;
   typing = false;
-  updateUndoButtons();
+  updateUndoButtons(); saveHist();
 }
 function restoreSnap(s){
   const o = JSON.parse(s);
@@ -1047,13 +1112,28 @@ function restoreSnap(s){
 }
 function undo(){
   if(!hist.undo.length) return;
-  hist.redo.push(snap()); restoreSnap(hist.undo.pop()); updateUndoButtons();
+  hist.redo.push(snap()); restoreSnap(hist.undo.pop()); updateUndoButtons(); saveHist();
   toast('元に戻しました', false);
 }
 function redo(){
   if(!hist.redo.length) return;
-  hist.undo.push(snap()); restoreSnap(hist.redo.pop()); updateUndoButtons();
+  hist.undo.push(snap()); restoreSnap(hist.redo.pop()); updateUndoButtons(); saveHist();
   toast('やり直しました', false);
+}
+// ページを開き直しても元に戻せるよう、履歴を IndexedDB に残す
+let histTimer = null;
+function saveHist(){
+  clearTimeout(histTimer);
+  const id = activeId, h = hist;
+  histTimer = setTimeout(() => idbSet('hist', id, {undo:h.undo.slice(-60), redo:h.redo.slice(-60)}), 600);
+}
+async function loadHist(d){
+  if(d.histLoaded) return;
+  d.histLoaded = true;
+  const v = await idbGet('hist', d.id);
+  if(!v || d.hist.undo.length || d.hist.redo.length) return;
+  d.hist.undo.push(...v.undo); d.hist.redo.push(...v.redo);
+  if(d.id === activeId) updateUndoButtons();
 }
 function updateUndoButtons(){ $('#btnUndo').disabled = !hist.undo.length; $('#btnRedo').disabled = !hist.redo.length; }
 $('#btnUndo').addEventListener('click', undo);
@@ -1069,13 +1149,13 @@ function noteTyping(){
 // ===== トースト =====
 let toastTimer = null, toastAction = null;
 // undoArg：true=「元に戻す」、関数=押したときの処理、false=ボタンなし
-function toast(msg, undoArg = true){
+function toast(msg, undoArg = true, ms){
   $('#toastMsg').textContent = msg;
   $('#toastUndo').style.display = undoArg ? '' : 'none';
   toastAction = typeof undoArg === 'function' ? undoArg : undo;
   $('#toast').classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => $('#toast').classList.remove('show'), undoArg ? 6000 : 2500);
+  toastTimer = setTimeout(() => $('#toast').classList.remove('show'), ms || (undoArg ? 6000 : 2500));
 }
 $('#toastUndo').addEventListener('click', () => { $('#toast').classList.remove('show'); toastAction(); });
 
@@ -1272,7 +1352,7 @@ function itemEl(r){
   const ta = el('textarea'); ta.rows = 1; ta.value = r.text; ta.placeholder = 'メモを入力…';
   const cut = btn('cut', '✂ ここから次のコマ', 'cut', 'この行から下を次のコマにします（文の途中なら Ctrl+Enter）');
   cut.tabIndex = -1;
-  d.append(b, ta, cut);
+  d.append(b, ta, el('div', 'tcover'), cut);
   return d;
 }
 function autosize(ta){ ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
@@ -1288,7 +1368,7 @@ function renderEditor(){
       const card = el('div', 'card' + (p.key === selKey ? ' sel' : '')); card.dataset.key = p.key;
       const head = el('div', 'chead'); head.dataset.act = 'select';
       const handle = el('span', 'handle', '⠿'); handle.title = 'ドラッグして並べ替え'; handle.setAttribute('aria-hidden', 'true');
-      head.append(handle, el('span', 'cno', `コマ ${p.idx + 1}`), sizeDots(p));
+      head.append(handle, el('span', 'cno', `コマ ${p.idx + 1}`), sizeDots(p), btn('cdel', '🗑 削除', 'del', 'このコマを削除します（元に戻せます）'));
       const isFirst = pg.index === 0 && p.idx === 0;
       const isLast = pg.index === lastPages.length - 1 && p.idx === pg.panels.length - 1;
       const chips = el('span', 'chips');
@@ -1297,7 +1377,6 @@ function renderEditor(){
       chips.append(btn('chip', '⧉ コピー', 'copy', 'このコマをコピー（別のタブにも貼り付けられます）'),
                    btn('chip', '✂ 切り取り', 'cutPanel', 'このコマを切り取り（別のタブにも貼り付けられます）'));
       if(clip) chips.append(btn('chip paste', '📋 貼り付け', 'paste', 'コピーしたコマをこのコマの後ろに貼り付け'));
-      chips.append(btn('chip', '🗑 削除', 'del', 'このコマを削除します（元に戻せます）'));
       if(!isFirst && p.breakRow){
         chips.append(
           btn('chip' + (p.startType === 'page' ? ' on' : ''), '📄 改ページ', 'togglePage', p.startType === 'page' ? 'クリックで解除（前のページに続けます）' : 'このコマから次のページにします'),
@@ -1431,6 +1510,7 @@ editorEl.addEventListener('paste', e => {
   toast(`${parsed.filter(r => r.type === 'item').length} 行を貼り付けました`);
 });
 editorEl.addEventListener('click', e => {
+  if(e.target.classList.contains('tcover')){ focusRow(e.target.closest('.row').dataset.id); return; }
   const b = e.target.closest('[data-act]'); if(!b) return;
   const act = b.dataset.act;
   const card = b.closest('.card');
@@ -1568,7 +1648,7 @@ function deletePanel(key, msg){
   groups[at.g].splice(at.i, 1);
   if(selKey === key) selKey = null;
   applyGroups(groups);
-  toast(msg || 'コマを削除しました');
+  toast(msg || 'コマを削除しました', true, 10000);
 }
 
 // ===== コマのコピー・切り取り・貼り付け =====
@@ -1616,9 +1696,10 @@ function pastePanel(afterKey){
 // ===== ドラッグ操作 =====
 // 左のカード（⠿）＝好きな位置へ並べ替え、右のコマ＝別のコマと入れ替え
 let drag = null, pressing = null, suppressClick = false;
+const isTouch = matchMedia('(hover:none)').matches;
 const dropLine = el('div', 'dropline');
 const ghostEl = $('#ghost');
-function beginDrag(kind, key, x, y){
+function beginDrag(kind, key, x, y, touchId){
   const p = findPanel(key); if(!p) return;
   const first = p.items.find(it => it.text);
   ghostEl.textContent = `${p.page + 1}ページ目 コマ${p.idx + 1}` + (first ? `：${first.text}` : '');
@@ -1626,13 +1707,15 @@ function beginDrag(kind, key, x, y){
   document.body.classList.add('dragmode');
   const srcEl = kind === 'card' ? editorEl.querySelector(`.card[data-key="${CSS.escape(key)}"]`) : pagesEl.querySelector(`.pn[data-key="${CSS.escape(key)}"]`);
   if(srcEl) srcEl.classList.add('dragging');
-  drag = {kind, key, x, y, srcEl, target:null, raf:0, box:kind === 'card' ? editorEl : pagesEl};
+  drag = {kind, key, x, y, srcEl, target:null, raf:0, box:kind === 'card' ? editorEl : pagesEl, touchId};
   moveDrag(x, y);
   drag.raf = requestAnimationFrame(autoScroll);
 }
 function moveDrag(x, y){
   drag.x = x; drag.y = y;
-  ghostEl.style.transform = `translate(${x + 14}px,${y + 14}px)`;
+  // タッチは指で隠れないよう上に出す
+  const touch = drag.touchId != null;
+  ghostEl.style.transform = `translate(${Math.min(x + (touch ? -40 : 14), innerWidth - 230)}px,${y + (touch ? -64 : 14)}px)`;
   updateDropTarget();
 }
 function clearTarget(){
@@ -1654,12 +1737,13 @@ function updateDropTarget(){
     if(key){ pn.classList.add('droptarget'); drag.target = {key, el:pn}; }
     return;
   }
-  if(!inside){ clearTarget(); return; }
+  if(x < box.left - 30 || x > box.right + 30){ clearTarget(); return; }
+  const yy = clamp(y, box.top, box.bottom); // 指が編集欄の外へ出ても端の位置として扱う
   const cards = [...editorEl.querySelectorAll('.card')];
   let ref = null, after = false;
   for(const c of cards){
     const r = c.getBoundingClientRect();
-    if(y < r.top + r.height / 2){ ref = c; break; }
+    if(yy < r.top + r.height / 2){ ref = c; break; }
   }
   if(!ref){ ref = cards[cards.length - 1]; after = true; }
   else{
@@ -1670,7 +1754,7 @@ function updateDropTarget(){
     const prevCard = prev === dropLine ? prev.previousElementSibling : prev;
     if(bar && prevCard && prevCard.classList.contains('card')){
       const r = bar.getBoundingClientRect();
-      if(y < r.top + r.height / 2){ ref = prevCard; after = true; }
+      if(yy < r.top + r.height / 2){ ref = prevCard; after = true; }
     }
   }
   const t = drag.target;
@@ -1706,37 +1790,75 @@ function endDrag(drop){
   if(d.kind === 'panel'){ if(swapPanels(d.key, t.key)) toast('コマを入れ替えました'); }
   else if(movePanel(d.key, t.key, t.after)) toast('コマを移動しました');
 }
-function cancelPress(){ if(pressing){ clearTimeout(pressing.timer); pressing = null; } }
+function cancelPress(){
+  if(!pressing) return;
+  clearTimeout(pressing.timer);
+  if(pressing.el) pressing.el.classList.remove('pressing');
+  pressing = null;
+}
+// マウス：⠿ はすぐ、コマは少し動かすと開始
 editorEl.addEventListener('pointerdown', e => {
+  if(e.pointerType === 'touch') return;
   const h = e.target.closest('.handle');
   if(!h || e.button !== 0 || drag) return;
   e.preventDefault();
   beginDrag('card', h.closest('.card').dataset.key, e.clientX, e.clientY);
 });
 pagesEl.addEventListener('pointerdown', e => {
+  if(e.pointerType === 'touch') return;
   const pn = e.target.closest('.pn');
-  if(!pn || e.button !== 0 || e.target.closest('.sizes') || drag) return;
-  const press = {key:pn.dataset.key, x:e.clientX, y:e.clientY, touch:e.pointerType !== 'mouse', timer:0};
-  // タッチは長押しで開始（スクロールと区別するため）
-  if(press.touch) press.timer = setTimeout(() => {
-    if(pressing !== press) return;
-    pressing = null;
-    if(navigator.vibrate) navigator.vibrate(15);
-    beginDrag('panel', press.key, press.x, press.y);
-  }, 320);
-  pressing = press;
+  if(!pn || e.button !== 0 || e.target.closest('.sizes,.pdel') || drag) return;
+  pressing = {key:pn.dataset.key, x:e.clientX, y:e.clientY};
 });
 document.addEventListener('pointermove', e => {
+  if(e.pointerType === 'touch') return;
   if(drag){ e.preventDefault(); moveDrag(e.clientX, e.clientY); return; }
   if(!pressing) return;
-  const dist = Math.hypot(e.clientX - pressing.x, e.clientY - pressing.y);
-  if(pressing.touch){ if(dist > 10) cancelPress(); }
-  else if(dist > 6){ const k = pressing.key; cancelPress(); beginDrag('panel', k, e.clientX, e.clientY); }
+  if(Math.hypot(e.clientX - pressing.x, e.clientY - pressing.y) > 6){ const k = pressing.key; cancelPress(); beginDrag('panel', k, e.clientX, e.clientY); }
 });
-document.addEventListener('pointerup', () => { cancelPress(); if(drag) endDrag(true); });
-document.addEventListener('pointercancel', () => { cancelPress(); if(drag) endDrag(false); });
-document.addEventListener('touchmove', e => { if(drag) e.preventDefault(); }, {passive:false}); // ドラッグ中は画面を動かさない
-pagesEl.addEventListener('contextmenu', e => { if(pressing || drag) e.preventDefault(); });
+document.addEventListener('pointerup', e => { if(e.pointerType === 'touch') return; cancelPress(); if(drag) endDrag(true); });
+document.addEventListener('pointercancel', e => { if(e.pointerType === 'touch') return; cancelPress(); if(drag) endDrag(false); });
+
+// タッチ：⠿ はすぐ、それ以外は長押しで開始
+const HOLD_MS = 280;
+function startPress(kind, key, target, t){
+  const press = {kind, key, el:target, x:t.clientX, y:t.clientY, id:t.identifier};
+  target.classList.add('pressing');
+  press.timer = setTimeout(() => {
+    if(pressing !== press) return;
+    cancelPress();
+    if(navigator.vibrate) navigator.vibrate(15);
+    beginDrag(kind, key, press.x, press.y, press.id);
+  }, HOLD_MS);
+  pressing = press;
+}
+document.addEventListener('touchstart', e => {
+  if(drag) return;
+  if(e.touches.length > 1){ cancelPress(); return; } // 2本指は対象外
+  const t = e.changedTouches[0], trg = e.target;
+  if(trg.closest('button,input,dialog,.sizes') || trg.tagName === 'TEXTAREA') return;
+  const h = trg.closest('.handle');
+  if(h){ e.preventDefault(); beginDrag('card', h.closest('.card').dataset.key, t.clientX, t.clientY, t.identifier); return; }
+  const card = trg.closest('.card');
+  if(card){ startPress('card', card.dataset.key, card, t); return; }
+  const pn = trg.closest('.pn');
+  if(pn) startPress('panel', pn.dataset.key, pn, t);
+}, {passive:false});
+document.addEventListener('touchmove', e => {
+  if(drag){
+    if(e.cancelable) e.preventDefault(); // ドラッグ中は画面を動かさない
+    const t = [...e.touches].find(x => x.identifier === drag.touchId) || e.touches[0];
+    if(t) moveDrag(t.clientX, t.clientY);
+    return;
+  }
+  if(pressing){
+    const t = [...e.touches].find(x => x.identifier === pressing.id);
+    if(t && Math.hypot(t.clientX - pressing.x, t.clientY - pressing.y) > 10) cancelPress(); // スクロールと判断
+  }
+}, {passive:false});
+document.addEventListener('touchend', () => { cancelPress(); if(drag) endDrag(true); });
+document.addEventListener('touchcancel', () => { cancelPress(); if(drag) endDrag(false); });
+document.addEventListener('contextmenu', e => { if(pressing || drag) e.preventDefault(); });
 document.addEventListener('click', e => { if(suppressClick){ e.stopPropagation(); e.preventDefault(); suppressClick = false; } }, true);
 
 // ===== プレビュー =====
@@ -1787,7 +1909,8 @@ function renderPreview(){
       sizes.append('小');
       for(let s = 1; s <= 5; s++){ const b = el('button', s === p.size ? 'on' : '', s); b.dataset.size = s; b.title = SIZE_NAMES[s]; sizes.appendChild(b); }
       sizes.append('大');
-      d.append(t, el('span', 'pnum', j + 1), el('div', 'phov', 'クリックで大きさ変更・ドラッグで入れ替え'), sizes);
+      const pdel = el('button', 'pdel', '🗑'); pdel.title = 'このコマを削除'; pdel.setAttribute('aria-label', `コマ ${j + 1} を削除`);
+      d.append(t, el('span', 'pnum', j + 1), el('div', 'phov', 'クリックで大きさ変更・ドラッグで入れ替え'), pdel, sizes);
       page.appendChild(d);
     });
     wrap.append(head, page);
@@ -1835,7 +1958,7 @@ function renderHintbar(){
   const bar = $('#hintbar'); bar.innerHTML = '';
   const p = selKey && findPanel(selKey);
   if(!p){
-    bar.append('💡 コマをクリックで大きさを変更、別のコマへドラッグで入れ替えできます');
+    bar.append(isTouch ? '💡 タップで大きさを変更、長押しして別のコマへ動かすと入れ替えできます' : '💡 コマをクリックで大きさを変更、別のコマへドラッグで入れ替えできます');
     if(clip){ const b = btn('', '📋 最後に貼り付け', null, 'コピーしたコマを最後に貼り付け (Ctrl+V)'); b.addEventListener('click', () => pastePanel(null)); bar.appendChild(b); }
     return;
   }
@@ -1856,6 +1979,8 @@ function renderHintbar(){
   bar.append(del, x);
 }
 pagesEl.addEventListener('click', e => {
+  const dl = e.target.closest('.pdel');
+  if(dl){ deletePanel(dl.closest('.pn').dataset.key); return; }
   const sb = e.target.closest('.sizes button');
   if(sb){ setSize(sb.closest('.pn').dataset.key, +sb.dataset.size); return; }
   const pn = e.target.closest('.pn');
@@ -1885,7 +2010,11 @@ pagesEl.addEventListener('click', e => {
 document.addEventListener('keydown', e => {
   const mod = e.ctrlKey || e.metaKey;
   if(drag && e.key === 'Escape'){ e.preventDefault(); endDrag(false); return; }
-  if(mod && !e.altKey && (e.key === 's' || e.key === 'S')){ e.preventDefault(); saveFile(e.shiftKey); return; }
+  if(mod && !e.altKey && (e.key === 's' || e.key === 'S')){
+    e.preventDefault();
+    if(!document.querySelector('dialog[open]')) saveFile(e.shiftKey);
+    return;
+  }
   if(document.querySelector('dialog[open]')) return;
   const t = e.target.tagName;
   if(t !== 'INPUT'){ // 名前の入力中はブラウザ標準の取り消しに任せる
@@ -2290,6 +2419,7 @@ $('#welcomeEmpty').addEventListener('click', () => {
 
 // ===== 起動 =====
 if(loadUI().guideHidden) $('#guide').classList.add('hidden');
+if(isTouch) $('#memoSub').textContent = '1枚＝1コマ。長押しで並べ替え';
 // ファイル一覧を読み込む。旧版のデータがあれば1つ目のファイルとして引き継ぐ（旧データは消さない）
 function initDocs(){
   const idx = readIndex();
@@ -2308,6 +2438,13 @@ function initDocs(){
 initDocs();
 idbLoadHandles();
 if(firstVisit) openWelcome();
+if(window.ResizeObserver){
+  let lastW = 0;
+  new ResizeObserver(() => {
+    const w = editorEl.clientWidth;
+    if(w && w !== lastW){ lastW = w; editorEl.querySelectorAll('textarea').forEach(autosize); }
+  }).observe(editorEl);
+}
 let resizeTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
