@@ -85,13 +85,13 @@ body.filedrag #pages,body.filedrag #editor{outline:3px dashed var(--accent);outl
 #guideClose{flex:none;align-self:center}
 
 /* ===== メイン ===== */
-main{flex:1;display:grid;grid-template-columns:minmax(330px,460px) minmax(0,1fr);min-height:0;min-width:0}
+main{flex:1;display:grid;grid-template-columns:minmax(300px,min(42%,460px)) minmax(0,1fr);min-height:0;min-width:0}
 #left{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--bg)}
 #right{display:flex;flex-direction:column;min-height:0;min-width:0}
 .bar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--surface);flex:none}
 .bar h2{font-size:14px;margin:0;display:flex;align-items:center;gap:6px}
 .bar .sub{font-size:12px;color:var(--muted)}
-#editor{flex:1;overflow:auto;padding:10px 12px 60px}
+#editor{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 12px 60px}
 
 /* ページ見出し */
 .pagebar{display:flex;align-items:center;gap:8px;margin:14px 2px 6px;color:var(--page);font-weight:700;font-size:13px}
@@ -131,6 +131,7 @@ button.paste{border-color:var(--ok);color:var(--ok)}
 .chips{width:100%;display:none;gap:4px;flex-wrap:wrap;padding-top:2px}
 .card.sel .chips{display:flex}
 .chips .sp{flex:1}
+.mvs{display:inline-flex;gap:4px;flex:none}
 .chip{font-size:12px;padding:3px 9px;border-radius:999px}
 .chip.on{background:var(--page-weak);border-color:var(--page);color:var(--page)}
 .rows{padding:4px 6px 2px}
@@ -138,6 +139,8 @@ button.paste{border-color:var(--ok);color:var(--ok)}
 .row:hover{background:var(--surface2)}
 .row .bullet{flex:none;width:18px;padding-top:5px;text-align:center;color:var(--muted)}
 .row textarea{field-sizing:content;flex:1;border:none;background:transparent;resize:none;padding:5px 2px;line-height:1.5;outline:none;overflow:hidden;min-width:0}
+.tcover{cursor:pointer}
+button:focus-visible,summary:focus-visible,.ftab:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .row textarea::placeholder{color:var(--muted);opacity:.7}
 .row .cut{flex:none;font-size:12px;padding:2px 8px;margin-top:3px;border-radius:999px;opacity:0;color:var(--accent-text);border-color:var(--accent-weak);background:var(--accent-weak)}
 .row:hover .cut,.row:focus-within .cut{opacity:1}
@@ -145,8 +148,8 @@ button.paste{border-color:var(--ok);color:var(--ok)}
 .empty{color:var(--muted);font-size:12px;padding:6px 8px}
 .addrow{border:none;background:none;color:var(--muted);font-size:12px;padding:4px 10px 8px 30px;width:100%;text-align:left}
 .addrow:hover{color:var(--accent-text)}
-.addbtns{display:flex;gap:8px;margin-top:10px}
-.addbtns button{flex:1;border-style:dashed;padding:10px}
+.addbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.addbtns button{flex:1 1 auto;border-style:dashed;padding:10px}
 
 /* ===== プレビュー ===== */
 #hintbar{display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--accent-weak);color:var(--accent-text);font-size:13px;flex-wrap:wrap;min-height:40px;flex:none}
@@ -242,7 +245,25 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
   .row textarea,.ftab input{font-size:16px} /* iOSの自動拡大を防ぐ */
   .pn .phov{display:none!important}
 }
-@media (max-width:860px){
+/* タブレット：表記を短くして1段に収める */
+@media (max-width:900px){
+  .logo span,.hide-sm{display:none}
+  .only-sm{display:inline}
+  .step small{display:none}
+  .step{padding:4px 10px 4px 6px}
+  #right .bar label{display:none!important}
+  #hintbar .sz{display:none}
+  #hintbar{padding:5px 10px}
+  #left .bar .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #left .bar h2{display:none}
+}
+/* 高さが低い画面（スマホ横向きなど）はガイドを隠してメモを広く */
+@media (max-height:560px){
+  #guide{display:none}
+  header{padding:4px 12px}
+  .bar{padding:3px 12px}
+}
+@media (max-width:700px){
   main{grid-template-columns:minmax(0,1fr)}
   #left{border-right:none;min-width:0}
   .row .cut{padding:2px 6px}
@@ -261,6 +282,8 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
   #left .bar .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #tabs{padding:4px 8px 0}
   .tabbtn{padding:4px 6px}
+  #hintbar .sz{display:none}               /* 大きさはコマの上で選ぶ */
+  #hintbar{padding:5px 10px;min-height:0}
   .step small{display:none}
   .step{flex:none}
   .step .arrow{display:none}
@@ -288,6 +311,7 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
       <button id="btnNew"><span>新しいファイル</span><small>新しいタブで作り始めます</small></button>
       <button id="btnLoad"><span>ファイルを開く</span><small>保存した .json を開きます（複数選択できます）</small></button>
       <button id="btnSaveAs"><span>名前を付けて保存</span><small>別のファイルとして保存します (Ctrl+Shift+S)</small></button>
+      <button id="btnAutoInfo"><span>保存について</span><small>自動保存のしくみと注意点</small></button>
       <button id="btnRename"><span>名前を変更</span><small>今のタブの名前を変えます</small></button>
       <button id="btnFilesMenu"><span>ファイル一覧</span><small>閉じたファイルを開く・不要なファイルを削除</small></button>
       <button id="btnBulk"><span>テキストでまとめて入力</span><small>他のメモアプリの文章を貼り付けて取り込み</small></button>
@@ -373,8 +397,9 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
 <!-- 自動保存の説明（上書き保存ができないブラウザ用） -->
 <dialog id="dlgAuto">
   <h2>✓ 自動で保存されています</h2>
-  <p class="lead">入力した内容は、この端末のブラウザに自動で保存されています。保存の操作は必要ありません。閉じたファイルは「📂 ファイル一覧」から開けます。</p>
-  <p class="info">別の端末で使うときや、バックアップを取りたいときは「名前を付けて保存」でファイルにできます。</p>
+  <p class="lead">入力した内容は、この端末のブラウザに自動で保存されています。普段は保存の操作は要りません。閉じたファイルは「📂 ファイル一覧」から開けます。</p>
+  <p class="info"><b>ご注意：</b>iPhone の Safari は、このページを長いあいだ（目安7日以上）開かないと保存内容を消すことがあります。ブラウザの履歴やデータを消したときも失われます。大事な作品は「名前を付けて保存」でファイルに残してください。別の端末で使うときも同じです。</p>
+  <p class="info" id="autoLast"></p>
   <div class="acts">
     <button id="autoExport">名前を付けて保存</button>
     <button class="primary" id="autoClose">閉じる</button>
@@ -536,7 +561,7 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
       <li><b>複数ファイル</b>：上のタブがファイルです。「＋」で新しいファイル、タブのクリックで切り替え、ダブルクリックで名前を変更できます。</li>
       <li><b>閉じる</b>：タブの × で閉じても消えません。「📂 ファイル一覧」からいつでも開き直せます。不要になったら一覧の「削除」で消せます。</li>
       <li><b>上書き保存</b>：<kbd>Ctrl</kbd>+<kbd>S</kbd> または「💾 保存」。最初に名前と保存先を決めると、次からは同じファイルに上書きします（パソコンの Chrome / Edge）。</li>
-      <li><b>スマホ・Safari・Firefox</b>：自動で保存されるので、保存の操作は要りません。ファイルとして残したいときは「ファイル → 名前を付けて保存」を使います。確認が出たら「ダウンロード」を押してください。</li>
+      <li><b>スマホ・Safari・Firefox</b>：普段は自動で保存されます。ファイルにも残すときは「💾 保存」を押します（最初だけ名前を入力）。2回目からは「💾 上書き保存」で、名前を聞かずに同じ名前で保存します。確認が出たら「ダウンロード」を押してください。これらのブラウザは元のファイルへ書き戻せないため、新しいファイルとして増えていきます（例：「第1話 2.json」）。iPhone の Safari は長いあいだ開かないと保存内容を消すことがあるので、大事な作品はファイルにも残してください。</li>
       <li><b>自動保存</b>：入力内容は常にこのブラウザの中に自動保存されます。ただし端末どうしでは同期されず、ブラウザのデータを消すと失われます。別の端末に移すときや大事な節目には、ファイルとして保存してください。</li>
       <li><b>ファイルを開く</b>：パソコンでは今のファイルと同じフォルダから始まり、.json だけが表示されます。保存した .json は画面にドラッグ＆ドロップしても開けます。スマホでは、まずファイル一覧から選びます。別の端末から持ってきたファイルだけ「端末のファイルを開く」で探します。</li>
     </ul>
@@ -666,6 +691,7 @@ function normalize(s){
 let saveTimer = null;
 function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(flushSave, 300); }
 const firstVisit = !loadUI().welcomed;
+const isTouch = matchMedia('(hover:none)').matches;
 let state = null;      // 今開いているファイルの中身
 let selKey = null;     // 選択中のコマ
 let lastPages = [];    // 直近に組んだページ
@@ -719,7 +745,7 @@ function flushSave(){
   if(json === d.lastJson) return;
   d.lastJson = json; d.updated = Date.now();
   lsSet(DOC_PREFIX + d.id, json);
-  d.dirty = hasFS && d.savedHash != null && docHash(state) !== d.savedHash; // 上書き保存できないブラウザでは「未保存」を出さない
+  d.dirty = d.savedHash != null && docHash(state) !== d.savedHash;
   writeIndex(); renderTabs(); updateSaveUI();
 }
 function untitled(){
@@ -796,14 +822,15 @@ function renderTabs(){
     const t = el('div', 'ftab' + (d.id === activeId ? ' on' : '')); t.dataset.id = d.id;
     t.setAttribute('role', 'tab'); t.setAttribute('aria-selected', d.id === activeId);
     t.title = `${d.title}${d.fileName ? `（${d.fileName}）` : ''}\nダブルクリックで名前を変更`;
-    if(hasFS && d.dirty){ const o = el('span', 'dot', '●'); o.title = '未保存の変更があります'; t.appendChild(o); }
+    if(d.dirty){ const o = el('span', 'dot', '●'); o.title = '未保存の変更があります'; t.appendChild(o); }
     t.appendChild(el('span', 'nm', d.title));
     const x = el('button', 'x', '×'); x.title = '閉じる（ファイル一覧からまた開けます）'; x.setAttribute('aria-label', `${d.title} を閉じる`);
     t.appendChild(x);
     list.appendChild(t);
   }
   const closed = docs.size - openDocs().length;
-  $('#btnFiles').textContent = '📂 ファイル一覧' + (closed ? `（閉じている ${closed}）` : '');
+  const narrow = innerWidth <= 700;
+  $('#btnFiles').textContent = (narrow ? '📂 一覧' : '📂 ファイル一覧') + (closed ? (narrow ? `(${closed})` : `（閉じている ${closed}）`) : '');
   const on = list.querySelector('.ftab.on'); if(on) on.scrollIntoView({block:'nearest', inline:'nearest'});
 }
 function startRename(id){
@@ -916,15 +943,9 @@ function timeStr(t){ return t ? new Date(t).toLocaleString('ja-JP', {month:'nume
 function updateSaveUI(){
   const d = curDoc(); if(!d) return;
   const b = $('#btnSave'), st = $('#saveStatus');
-  if(!hasFS){
-    // 上書き保存できないブラウザでは自動保存が基本。押さなくてよいことを表示で伝える
-    b.textContent = '✓ 自動保存';
-    b.title = 'この端末に自動で保存されています';
-    st.className = 'ok'; st.textContent = '✓ この端末に自動保存済み'; st.title = '';
-    return;
-  }
-  b.textContent = d.handle ? '💾 上書き保存' : '💾 保存';
-  b.title = d.handle ? `${d.handle.name} に上書き保存 (Ctrl+S)` : 'ファイルとして保存 (Ctrl+S)';
+  const linked = d.handle || (!hasFS && d.savedHash != null); // すでに保存したファイルがある
+  b.textContent = linked ? '💾 上書き保存' : '💾 保存';
+  b.title = linked ? `${d.fileName} に保存 (Ctrl+S)` : 'ファイルとして保存 (Ctrl+S)';
   st.className = d.dirty ? 'dirty' : (d.savedHash != null ? 'ok' : '');
   st.textContent = d.dirty ? `● 未保存の変更あり（${d.fileName}）`
     : d.savedHash != null ? `✓ 保存済み（${d.fileName}）` : 'ブラウザに自動保存中';
@@ -954,8 +975,9 @@ async function saveFile(asNew){
   flushSave();
   saving = true;
   try{
-    // 保存画面がないブラウザでは、「名前を付けて保存」のたびに名前を聞く
-    if(!hasFS && (asNew || d.savedHash == null)){
+    // 保存画面がないブラウザでは、最初の保存と「名前を付けて保存」のときに名前を聞く
+    const again = !hasFS && !asNew && d.savedHash != null;
+    if(!hasFS && !again){
       const name = await askName(d.title);
       if(name == null) return;
       d.title = name.slice(0, 60); writeIndex(); renderTabs();
@@ -966,7 +988,8 @@ async function saveFile(asNew){
       // 種類を汎用にして、スマホの確認画面で「表示」に飛ばされないようにする
       download(new Blob([payload(d)], {type:'application/octet-stream'}), name);
       Object.assign(d, {fileName:name, savedHash:hash, dirty:false});
-      toast('確認が出たら「ダウンロード」を押してください', false, 5000);
+      saveUI({lastExport:Date.now()});
+      toast(again ? '確認が出たら「ダウンロード」を押してください（同じ名前の新しいファイルとして保存されます）' : '確認が出たら「ダウンロード」を押してください', false, 5000);
     }else{
       let h = asNew ? null : d.handle;
       if(!h){
@@ -1074,7 +1097,13 @@ document.addEventListener('drop', async e => {
   }
   if(list.length) openFiles(list);
 });
-$('#btnSave').addEventListener('click', () => { if(hasFS) saveFile(false); else $('#dlgAuto').showModal(); });
+$('#btnSave').addEventListener('click', () => saveFile(false));
+$('#btnAutoInfo').addEventListener('click', () => {
+  closeMenu();
+  const t = loadUI().lastExport;
+  $('#autoLast').textContent = hasFS ? '' : (t ? `最後にファイルに保存した日時：${timeStr(t)}` : 'まだファイルに保存していません');
+  $('#dlgAuto').showModal();
+});
 $('#btnSaveAs').addEventListener('click', () => { closeMenu(); saveFile(true); });
 $('#autoClose').addEventListener('click', () => $('#dlgAuto').close());
 $('#autoExport').addEventListener('click', () => { $('#dlgAuto').close(); saveFile(true); });
@@ -1146,11 +1175,11 @@ function redo(){
   toast('やり直しました', false);
 }
 // ページを開き直しても元に戻せるよう、履歴を IndexedDB に残す
-let histTimer = null;
+const histTimers = {};
 function saveHist(){
-  clearTimeout(histTimer);
   const id = activeId, h = hist;
-  histTimer = setTimeout(() => idbSet('hist', id, {undo:h.undo.slice(-60), redo:h.redo.slice(-60)}), 600);
+  clearTimeout(histTimers[id]);
+  histTimers[id] = setTimeout(() => idbSet('hist', id, {undo:h.undo.slice(-60), redo:h.redo.slice(-60)}), 600);
 }
 async function loadHist(d){
   if(d.histLoaded) return;
@@ -1375,7 +1404,7 @@ function itemEl(r){
   const d = el('div', 'row'); d.dataset.id = r.id; d.style.setProperty('--ind', r.indent);
   const b = el('span', 'bullet', r.indent ? '◦' : '・');
   const ta = el('textarea'); ta.rows = 1; ta.value = r.text; ta.placeholder = 'メモを入力…';
-  const cut = btn('cut', '✂ ここから次のコマ', 'cut', 'この行から下を次のコマにします（文の途中なら Ctrl+Enter）');
+  const cut = btn('cut', isTouch ? '✂ 分ける' : '✂ ここから次のコマ', 'cut', 'この行から下を次のコマにします（文の途中なら Ctrl+Enter）');
   cut.tabIndex = -1;
   d.append(b, ta, el('div', 'tcover'), cut);
   return d;
@@ -1407,7 +1436,8 @@ function renderEditor(){
           btn('chip' + (p.startType === 'page' ? ' on' : ''), '📄 改ページ', 'togglePage', p.startType === 'page' ? 'クリックで解除（前のページに続けます）' : 'このコマから次のページにします'),
           btn('chip', '⤒ 前とつなげる', 'merge', 'この区切りを消して、前のコマと1つにします'));
       }
-      chips.append(el('span', 'sp'), up, down);
+      const mvs = el('span', 'mvs'); mvs.append(up, down);
+      chips.append(el('span', 'sp'), mvs);
       head.appendChild(chips);
       const rows = el('div', 'rows');
       if(p.items.length) p.items.forEach(it => rows.appendChild(itemEl(it)));
@@ -1453,6 +1483,12 @@ function insertBreakAt(i, s, en, type){
   const br = {id:uid(), type};
   if(!before){ // 行頭なら、その行の前に区切り
     r.text = after;
+    const prev = state.rows[i - 1];
+    if(i === 0 || (prev && prev.type !== 'item')){ // すでに区切りの直後（先頭）なら増やさない
+      if(prev && prev.type !== type && type === 'page'){ prev.type = 'page'; commit(r.id, 0); toast('ここから次のページにしました'); }
+      else commit(r.id, 0);
+      return;
+    }
     state.rows.splice(i, 0, br); commit(r.id, 0);
   }else{
     r.text = before;
@@ -1461,18 +1497,41 @@ function insertBreakAt(i, s, en, type){
   }
   toast(type === 'page' ? 'ここから次のページにしました' : 'ここから次のコマにしました');
 }
+// 行頭での削除：字下げを戻す → 前の区切りを消す → 前の行とつなげる
+function backspaceAtStart(i, r, v){
+  r.text = v; pushHistory();
+  if(r.indent > 0){ r.indent--; commit(r.id, 0); return; }
+  const p = state.rows[i - 1];
+  if(p.type !== 'item'){ state.rows.splice(i - 1, 1); commit(r.id, 0); toast('前のコマとつなげました'); return; }
+  const pos = p.text.length; p.text += v; state.rows.splice(i, 1); commit(p.id, pos);
+}
 function findItem(i, dir){
   for(let j = i + dir; j >= 0 && j < state.rows.length; j += dir) if(state.rows[j].type === 'item') return state.rows[j];
   return null;
 }
 
-editorEl.addEventListener('beforeinput', e => { if(e.target.tagName === 'TEXTAREA') noteTyping(); });
+editorEl.addEventListener('beforeinput', e => {
+  const ta = e.target; if(ta.tagName !== 'TEXTAREA') return;
+  // keydown が届かないキーボードでも、行頭の削除で前の行とつなげる
+  if(e.inputType === 'deleteContentBackward' && ta.selectionStart === 0 && ta.selectionEnd === 0 && !e.isComposing){
+    const id = ta.closest('.row').dataset.id, i = rowIndex(id), r = state.rows[i];
+    if(r && (r.indent > 0 || i > 0)){ e.preventDefault(); backspaceAtStart(i, r, ta.value); return; }
+  }
+  noteTyping();
+});
 editorEl.addEventListener('input', e => {
   const ta = e.target; if(ta.tagName !== 'TEXTAREA') return;
   const r = state.rows[rowIndex(ta.closest('.row').dataset.id)];
   if(!r) return;
-  r.text = ta.value.replace(/\n/g, ' ');
-  if(r.text !== ta.value) ta.value = r.text;
+  // keydown が届かないキーボードの改行は、ここで次の行に分ける
+  if(ta.value.includes('\n')){
+    const at = ta.value.indexOf('\n');
+    r.text = ta.value.slice(0, at);
+    const nr = {id:uid(), type:'item', text:ta.value.slice(at + 1).replace(/\n/g, ' '), indent:r.indent};
+    state.rows.splice(rowIndex(r.id) + 1, 0, nr);
+    commit(nr.id, 0); return;
+  }
+  r.text = ta.value;
   autosize(ta); schedulePreview(); save();
 });
 editorEl.addEventListener('keydown', e => {
@@ -1494,11 +1553,8 @@ editorEl.addEventListener('keydown', e => {
     r.indent = clamp(r.indent + (e.shiftKey ? -1 : 1), 0, 3); commit(id, s); return;
   }
   if(e.key === 'Backspace' && s === 0 && en === 0){
-    if(r.indent > 0){ e.preventDefault(); pushHistory(); r.indent--; commit(id, 0); return; }
-    const p = state.rows[i - 1]; if(!p) return;
-    e.preventDefault(); pushHistory();
-    if(p.type !== 'item'){ state.rows.splice(i - 1, 1); commit(id, 0); toast('前のコマとつなげました'); return; }
-    const pos = p.text.length; p.text += v; state.rows.splice(i, 1); commit(p.id, pos); return;
+    if(r.indent > 0 || i > 0){ e.preventDefault(); backspaceAtStart(i, r, v); }
+    return;
   }
   if(e.key === 'Delete' && s === v.length && en === v.length){
     const nx = state.rows[i + 1]; if(!nx) return;
@@ -1721,7 +1777,6 @@ function pastePanel(afterKey){
 // ===== ドラッグ操作 =====
 // 左のカード（⠿）＝好きな位置へ並べ替え、右のコマ＝別のコマと入れ替え
 let drag = null, pressing = null, suppressClick = false;
-const isTouch = matchMedia('(hover:none)').matches;
 const dropLine = el('div', 'dropline');
 const ghostEl = $('#ghost');
 function beginDrag(kind, key, x, y, touchId){
@@ -1823,26 +1878,26 @@ function cancelPress(){
 }
 // マウス：⠿ はすぐ、コマは少し動かすと開始
 editorEl.addEventListener('pointerdown', e => {
-  if(e.pointerType === 'touch') return;
+  if(e.pointerType !== 'mouse') return;
   const h = e.target.closest('.handle');
   if(!h || e.button !== 0 || drag) return;
   e.preventDefault();
   beginDrag('card', h.closest('.card').dataset.key, e.clientX, e.clientY);
 });
 pagesEl.addEventListener('pointerdown', e => {
-  if(e.pointerType === 'touch') return;
+  if(e.pointerType !== 'mouse') return;
   const pn = e.target.closest('.pn');
   if(!pn || e.button !== 0 || e.target.closest('.sizes,.pdel') || drag) return;
   pressing = {key:pn.dataset.key, x:e.clientX, y:e.clientY};
 });
 document.addEventListener('pointermove', e => {
-  if(e.pointerType === 'touch') return;
+  if(e.pointerType !== 'mouse') return;
   if(drag){ e.preventDefault(); moveDrag(e.clientX, e.clientY); return; }
   if(!pressing) return;
   if(Math.hypot(e.clientX - pressing.x, e.clientY - pressing.y) > 6){ const k = pressing.key; cancelPress(); beginDrag('panel', k, e.clientX, e.clientY); }
 });
-document.addEventListener('pointerup', e => { if(e.pointerType === 'touch') return; cancelPress(); if(drag) endDrag(true); });
-document.addEventListener('pointercancel', e => { if(e.pointerType === 'touch') return; cancelPress(); if(drag) endDrag(false); });
+document.addEventListener('pointerup', e => { if(e.pointerType !== 'mouse') return; cancelPress(); if(drag) endDrag(true); });
+document.addEventListener('pointercancel', e => { if(e.pointerType !== 'mouse') return; cancelPress(); if(drag) endDrag(false); });
 
 // タッチ：⠿ はすぐ、それ以外は長押しで開始
 const HOLD_MS = 280;
@@ -2439,7 +2494,8 @@ $('#welcomeEmpty').addEventListener('click', () => {
   saveUI({welcomed:true}); $('#dlgWelcome').close();
   if(!isSample()) return; // 念のため：サンプル以外は絶対に消さない
   state.rows = [{id:uid(), type:'item', text:'', indent:0}]; state.sizes = {}; state.variants = {};
-  selKey = null; commit(state.rows[0].id, 0); setTab('memo');
+  const d = curDoc(); if(d.title === 'サンプル') d.title = untitled();
+  selKey = null; commit(state.rows[0].id, 0); setTab('memo'); renderTabs(); writeIndex();
 });
 
 // ===== 起動 =====
@@ -2469,18 +2525,32 @@ function initDocs(){
 }
 initDocs();
 idbLoadHandles();
+// ブラウザに保存データを消さないよう依頼する（対応ブラウザのみ）
+if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+// 上書き保存できないブラウザでは、しばらくファイルに残していなければ声をかける
+if(!hasFS && !firstVisit){
+  const last = loadUI().lastExport || 0;
+  if(Date.now() - last > 5 * 864e5 && [...docs.values()].some(d => d.title !== 'サンプル' && d.updated > last)){
+    toast('大事な作品は「ファイル → 名前を付けて保存」でファイルにも残しましょう', false, 6000);
+  }
+}
 if(firstVisit) openWelcome();
 if(window.ResizeObserver){
-  let lastW = 0;
+  // 欄の幅が変わったら、行の高さとプレビューの大きさを合わせ直す
+  let lastW = 0, lastP = 0;
   new ResizeObserver(() => {
     const w = editorEl.clientWidth;
     if(w && w !== lastW){ lastW = w; editorEl.querySelectorAll('textarea').forEach(autosize); }
   }).observe(editorEl);
+  new ResizeObserver(() => {
+    const w = pagesEl.clientWidth;
+    if(w && w !== lastP){ lastP = w; renderPreview(); }
+  }).observe(pagesEl);
 }
 let resizeTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => { renderPreview(); editorEl.querySelectorAll('textarea').forEach(autosize); }, 200);
+  resizeTimer = setTimeout(() => { renderPreview(); renderTabs(); editorEl.querySelectorAll('textarea').forEach(autosize); }, 200);
 });
 </script>
 </body>
