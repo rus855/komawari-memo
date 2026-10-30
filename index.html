@@ -363,19 +363,32 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
   <h2>名前を付けて保存</h2>
   <p class="lead">ファイルの名前を入力してください。</p>
   <input type="text" id="nameInput" maxlength="60" autocomplete="off" aria-label="ファイル名">
+  <p class="info" style="margin-top:10px">このあとブラウザの確認が出たら「ダウンロード」を押してください。ファイルは「ダウンロード」フォルダに入ります。</p>
   <div class="acts">
     <button id="nameCancel">キャンセル</button>
     <button class="primary" id="nameOk">保存</button>
   </div>
 </dialog>
 
+<!-- 自動保存の説明（上書き保存ができないブラウザ用） -->
+<dialog id="dlgAuto">
+  <h2>✓ 自動で保存されています</h2>
+  <p class="lead">入力した内容は、この端末のブラウザに自動で保存されています。保存の操作は必要ありません。閉じたファイルは「📂 ファイル一覧」から開けます。</p>
+  <p class="info">別の端末で使うときや、バックアップを取りたいときだけ、ファイルに書き出してください。</p>
+  <div class="acts">
+    <button id="autoExport">ファイルに書き出す (.json)</button>
+    <button class="primary" id="autoClose">閉じる</button>
+  </div>
+</dialog>
+
 <!-- ファイル一覧 -->
 <dialog id="dlgFiles">
   <h2>ファイル一覧</h2>
-  <p class="lead">タブを閉じたファイルも、このブラウザの中に残っています。使うときにまた開けます。</p>
+  <p class="lead">この端末で作ったファイルは、すべてここにあります（タブを閉じたものも含みます）。</p>
   <div id="fileList"></div>
+  <p class="info" id="filesHint" hidden style="margin-top:10px">別の端末から持ってきたファイルを開くときだけ「端末のファイルを開く」を使います。書き出したファイルは「ダウンロード」フォルダにあります。.json 以外は開けません。</p>
   <div class="acts">
-    <button id="filesOpen">パソコンのファイルを開く</button>
+    <button id="filesOpen">端末のファイルを開く</button>
     <button id="filesNew">新しいファイル</button>
     <button class="primary" id="filesClose">閉じる</button>
   </div>
@@ -522,9 +535,10 @@ details.opt summary{cursor:pointer;font-weight:600;font-size:13px}
     <ul>
       <li><b>複数ファイル</b>：上のタブがファイルです。「＋」で新しいファイル、タブのクリックで切り替え、ダブルクリックで名前を変更できます。</li>
       <li><b>閉じる</b>：タブの × で閉じても消えません。「📂 ファイル一覧」からいつでも開き直せます。不要になったら一覧の「削除」で消せます。</li>
-      <li><b>上書き保存</b>：<kbd>Ctrl</kbd>+<kbd>S</kbd> または「💾 保存」。最初に名前と保存先を決めると、次からは同じファイルに上書きします（Chrome / Edge）。Safari・Firefox・スマホでは、最初に名前を入力します。上書きはできないため、保存のたびに新しいファイルとしてダウンロードされます。</li>
+      <li><b>上書き保存</b>：<kbd>Ctrl</kbd>+<kbd>S</kbd> または「💾 保存」。最初に名前と保存先を決めると、次からは同じファイルに上書きします（パソコンの Chrome / Edge）。</li>
+      <li><b>スマホ・Safari・Firefox</b>：自動で保存されるので、保存の操作は要りません。別の端末で使うときだけ「ファイル → ファイルに書き出す」を使います。確認が出たら「ダウンロード」を押してください。</li>
       <li><b>自動保存</b>：入力内容は常にこのブラウザの中に自動保存されます。ただし端末どうしでは同期されず、ブラウザのデータを消すと失われます。別の端末に移すときや大事な節目には、ファイルとして保存してください。</li>
-      <li>保存した .json は、画面にドラッグ＆ドロップしても開けます。</li>
+      <li><b>ファイルを開く</b>：パソコンでは今のファイルと同じフォルダから始まり、.json だけが表示されます。保存した .json は画面にドラッグ＆ドロップしても開けます。スマホでは、まずファイル一覧から選びます。別の端末から持ってきたファイルだけ「端末のファイルを開く」で探します。</li>
     </ul>
   </div>
   <div class="acts"><button id="helpWelcome">はじめの案内をもう一度見る</button><button class="primary" id="helpClose">閉じる</button></div>
@@ -705,7 +719,7 @@ function flushSave(){
   if(json === d.lastJson) return;
   d.lastJson = json; d.updated = Date.now();
   lsSet(DOC_PREFIX + d.id, json);
-  d.dirty = d.savedHash != null && docHash(state) !== d.savedHash;
+  d.dirty = hasFS && d.savedHash != null && docHash(state) !== d.savedHash; // 上書き保存できないブラウザでは「未保存」を出さない
   writeIndex(); renderTabs(); updateSaveUI();
 }
 function untitled(){
@@ -782,7 +796,7 @@ function renderTabs(){
     const t = el('div', 'ftab' + (d.id === activeId ? ' on' : '')); t.dataset.id = d.id;
     t.setAttribute('role', 'tab'); t.setAttribute('aria-selected', d.id === activeId);
     t.title = `${d.title}${d.fileName ? `（${d.fileName}）` : ''}\nダブルクリックで名前を変更`;
-    if(d.dirty){ const o = el('span', 'dot', '●'); o.title = '未保存の変更があります'; t.appendChild(o); }
+    if(hasFS && d.dirty){ const o = el('span', 'dot', '●'); o.title = '未保存の変更があります'; t.appendChild(o); }
     t.appendChild(el('span', 'nm', d.title));
     const x = el('button', 'x', '×'); x.title = '閉じる（ファイル一覧からまた開けます）'; x.setAttribute('aria-label', `${d.title} を閉じる`);
     t.appendChild(x);
@@ -895,11 +909,20 @@ const hasFS = !!window.showSaveFilePicker;
 const FILE_TYPES = [{description:'コマ割りメモ', accept:{'application/json':['.json']}}];
 const safeName = t => (t || '無題').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 60).trim() || '無題';
 const stripExt = n => n.replace(/\.json$/i, '');
+// 今のファイルと同じフォルダから開始。保存先が未定なら前回のフォルダから
+const pickerStart = d => (d && d.handle ? {startIn:d.handle} : {id:'komawari'});
 const payload = d => JSON.stringify({app:'komawari-memo', version:2, title:d.title, ...d.data}, null, 1);
 function timeStr(t){ return t ? new Date(t).toLocaleString('ja-JP', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'}) : ''; }
 function updateSaveUI(){
   const d = curDoc(); if(!d) return;
   const b = $('#btnSave'), st = $('#saveStatus');
+  if(!hasFS){
+    // 上書き保存できないブラウザでは自動保存が基本。押さなくてよいことを表示で伝える
+    b.textContent = '✓ 自動保存';
+    b.title = 'この端末に自動で保存されています';
+    st.className = 'ok'; st.textContent = '✓ この端末に自動保存済み'; st.title = '';
+    return;
+  }
   b.textContent = d.handle ? '💾 上書き保存' : '💾 保存';
   b.title = d.handle ? `${d.handle.name} に上書き保存 (Ctrl+S)` : 'ファイルとして保存 (Ctrl+S)';
   st.className = d.dirty ? 'dirty' : (d.savedHash != null ? 'ok' : '');
@@ -931,8 +954,8 @@ async function saveFile(asNew){
   flushSave();
   saving = true;
   try{
-    // 保存画面がないブラウザでは、初回と「名前を付けて保存」のときに名前を聞く
-    if(!hasFS && (asNew || d.savedHash == null)){
+    // 保存画面がないブラウザでは、最初の書き出しのときだけ名前を聞く
+    if(!hasFS && d.savedHash == null){
       const name = await askName(d.title);
       if(name == null) return;
       d.title = name.slice(0, 60); writeIndex(); renderTabs();
@@ -940,14 +963,14 @@ async function saveFile(asNew){
     const hash = docHash(d.data);
     if(!hasFS){
       const name = safeName(d.title) + '.json';
-      download(new Blob([payload(d)], {type:'application/json'}), name);
+      // 種類を汎用にして、スマホの確認画面で「表示」に飛ばされないようにする
+      download(new Blob([payload(d)], {type:'application/octet-stream'}), name);
       Object.assign(d, {fileName:name, savedHash:hash, dirty:false});
-      if(!loadUI().noOverwriteTold){ saveUI({noOverwriteTold:true}); alert('このブラウザは同じファイルへの上書きに対応していないため、ダウンロードとして保存しました。\n（上書き保存を使うには、パソコンの Chrome か Edge をお使いください）'); }
-      else toast('ファイルをダウンロードしました', false);
+      toast('確認が出たら「ダウンロード」を押してください', false, 5000);
     }else{
       let h = asNew ? null : d.handle;
       if(!h){
-        h = await window.showSaveFilePicker({suggestedName:safeName(d.title) + '.json', types:FILE_TYPES});
+        h = await window.showSaveFilePicker({suggestedName:safeName(d.title) + '.json', types:FILE_TYPES, excludeAcceptAllOption:true, ...pickerStart(d)});
       }else{
         let perm = await h.queryPermission({mode:'readwrite'});
         if(perm !== 'granted') perm = await h.requestPermission({mode:'readwrite'});
@@ -1026,7 +1049,7 @@ async function openFiles(list){
 async function openFileDialog(){
   if(!window.showOpenFilePicker){ $('#fileLoad').click(); return; }
   try{
-    const hs = await window.showOpenFilePicker({multiple:true, types:FILE_TYPES});
+    const hs = await window.showOpenFilePicker({multiple:true, types:FILE_TYPES, excludeAcceptAllOption:true, ...pickerStart(curDoc())});
     const list = [];
     for(const h of hs) list.push({file:await h.getFile(), handle:h});
     await openFiles(list);
@@ -1051,8 +1074,10 @@ document.addEventListener('drop', async e => {
   }
   if(list.length) openFiles(list);
 });
-$('#btnSave').addEventListener('click', () => saveFile(false));
-$('#btnSaveAs').addEventListener('click', () => { closeMenu(); saveFile(true); });
+$('#btnSave').addEventListener('click', () => { if(hasFS) saveFile(false); else $('#dlgAuto').showModal(); });
+$('#btnSaveAs').addEventListener('click', () => { closeMenu(); saveFile(hasFS); });
+$('#autoClose').addEventListener('click', () => $('#dlgAuto').close());
+$('#autoExport').addEventListener('click', () => { $('#dlgAuto').close(); saveFile(false); });
 
 // ファイル一覧
 function renderFiles(){
@@ -2391,7 +2416,7 @@ $('#bulkApply').addEventListener('click', () => {
   state.rows = rows.length ? rows : [{id:uid(), type:'item', text:'', indent:0}];
   $('#dlgBulk').close(); commit(); toast('テキストを取り込みました');
 });
-$('#btnLoad').addEventListener('click', () => { closeMenu(); openFileDialog(); });
+$('#btnLoad').addEventListener('click', () => { closeMenu(); if(hasFS) openFileDialog(); else openFilesDialog(); });
 $('#fileLoad').addEventListener('change', async e => {
   const list = [...e.target.files].map(file => ({file, handle:null}));
   e.target.value = '';
@@ -2419,6 +2444,14 @@ $('#welcomeEmpty').addEventListener('click', () => {
 
 // ===== 起動 =====
 if(loadUI().guideHidden) $('#guide').classList.add('hidden');
+if(!hasFS){
+  // 上書き保存できないブラウザ向けに表記を変える
+  const sa = $('#btnSaveAs');
+  sa.querySelector('span').textContent = 'ファイルに書き出す (.json)';
+  sa.querySelector('small').textContent = '別の端末で使うときやバックアップ用';
+  $('#btnLoad').querySelector('small').textContent = 'この端末のファイル一覧から開きます';
+  $('#filesHint').hidden = false;
+}
 if(isTouch) $('#memoSub').textContent = '1枚＝1コマ。長押しで並べ替え';
 // ファイル一覧を読み込む。旧版のデータがあれば1つ目のファイルとして引き継ぐ（旧データは消さない）
 function initDocs(){
